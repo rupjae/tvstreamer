@@ -5,14 +5,15 @@ from __future__ import annotations
 import pathlib as _pl
 
 
-def _read_version_from_pyproject() -> str:
-    """Return the version defined in *pyproject.toml* (tool.poetry.version)."""
-
-# tomllib is stdlib in 3.11+, fall back to *tomli* for older interpreters.
+# tomllib is stdlib in 3.11+; fall back to *tomli* on older versions.
 try:
     import tomllib  # type: ignore
 except ModuleNotFoundError:  # pragma: no cover – <3.11 runtime
     import tomli as tomllib  # type: ignore
+
+
+def _read_version_from_pyproject() -> str:
+    """Return the version defined in *pyproject.toml* (tool.poetry.version)."""
 
     root = _pl.Path(__file__).resolve().parents[1]
     with (root / "pyproject.toml").open("rb") as fp:

@@ -21,6 +21,7 @@ python = ">=3.8,<4.0"
 # External runtime dependencies – streaming-only client keeps the list lean.
 websocket-client = ">=0.57.0"
 typer = "^0.9.0"
+tomli = { version = "^2.0.1", python = "<3.11" }
 
 [tool.poetry.scripts]
 tvws = "tvstreamer.cli:run"
