@@ -28,7 +28,7 @@ tomli = { version = "^2.0.1", python = "<3.11" }
 # -------------------------------------------------------------------
 
 [tool.poetry.extras]
-cli = ["typer", "rich"]
+cli = ["typer"]
 
 [tool.poetry.scripts]
 tvws = "tvstreamer.cli:app"
