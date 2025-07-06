@@ -54,6 +54,34 @@ Follow this Git workflow when making code changes:
 Following this flow keeps history tidy, accelerates code review, and reduces
 merge conflicts.
 
+### 0.1 · Local CI parity – “green before you push”
+
+CI runs *exactly* four top-level jobs on every commit:
+
+| Job | Command | Notes |
+|-----|---------|-------|
+| **Tests** | `pytest -q` | Unit / integration tests under `tests/`. |
+| **Typing** | `mypy --config-file mypy.ini tvstreamer` | Strict mode; config lives at project root. |
+| **Lint** | `ruff check tvstreamer` | F-, E-style + import rules configured in `pyproject.toml`. |
+| **Format** | `black --check tvstreamer` | No code auto-reformatting in CI; must be clean locally. |
+
+Before opening a PR **always** run the same commands locally (or via
+`pre-commit run -a`) and make sure they return *zero* errors.  This guarantees
+that the server-side pipeline stays green and reviewers can focus on the
+change itself rather than housekeeping fixes.
+
+> Quick one-liner:
+>
+> ```bash
+> pytest -q && mypy --config-file mypy.ini tvstreamer \
+>   && ruff check tvstreamer && black --check tvstreamer
+> ```
+
+If you are unsure *which* checks the CI currently executes, inspect the
+workflow file (`.github/workflows/ci.yml`) or call `gh workflow view` for a
+human-readable summary.  Matching the job matrix locally avoids the
+frustration of failing builds after pushing.
+
 ### Direct pushes vs. Pull Requests
 
 • **Default:** _Always_ use a topic branch and open a Pull Request.

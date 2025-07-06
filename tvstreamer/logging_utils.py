@@ -254,8 +254,11 @@ def configure_logging(*, debug: bool = False, debug_module: str | None = None) -
     root_logger.handlers.clear()
     root_logger.setLevel(root_level)
 
+    # Attach the *code_path* safeguard at the **root** level so that *any*
+    # handler added later by user code automatically inherits the guarantee.
+    root_logger.addFilter(_EnsureCodePathFilter())
+
     for h in handlers:
-        h.addFilter(_EnsureCodePathFilter())
         root_logger.addHandler(h)
 
     # Module-specific debugging ----------------------------------------
@@ -276,11 +279,16 @@ F = TypeVar("F", bound=Callable[..., Any])
 def trace(func: F) -> F:  # type: ignore[misc]
     """Decorator that logs function entry / exit at *TRACE* level."""
 
+    from functools import wraps
+
     logger = logging.getLogger(func.__module__)
 
+    @wraps(func)
     def _wrapper(*args: Any, **kwargs: Any):  # type: ignore[override]
         logger.log(
-            TRACE_LEVEL, f"→ {func.__qualname__}()", extra={"code_path": func.__code__.co_filename}
+            TRACE_LEVEL,
+            f"→ {func.__qualname__}()",
+            extra={"code_path": func.__code__.co_filename},
         )
         try:
             return func(*args, **kwargs)
@@ -290,10 +298,5 @@ def trace(func: F) -> F:  # type: ignore[misc]
                 f"← {func.__qualname__}()",
                 extra={"code_path": func.__code__.co_filename},
             )
-
-    _wrapper.__name__ = func.__name__
-    _wrapper.__qualname__ = func.__qualname__
-    _wrapper.__doc__ = func.__doc__
-    _wrapper.__module__ = func.__module__
 
     return _wrapper  # type: ignore[return-value]
