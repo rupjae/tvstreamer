@@ -15,12 +15,16 @@ from .cli import run
 
 
 def main() -> None:  # noqa: D401 – CLI entrypoint
-    """Package **entrypoint** (`python -m tvstreamer`).
+    """Entry-point executed by ``python -m tvstreamer``.
 
-    The helper delegates to :pyfunc:`tvstreamer.cli.run` so that the CLI logic
-    lives in exactly one place.  This keeps the import surface small and
-    avoids pulling in the *typer* dependency when end-users execute the module
-    without actually calling any sub-commands.
+    This thin wrapper hands control to :pyfunc:`tvstreamer.cli.run` so that all
+    command-line concerns remain centralised in *tvstreamer.cli*.
+
+    Args:
+        None
+
+    Returns:
+        None
     """
 
     # The *tvstreamer.cli.run* function accepts an optional *argv* list when we
