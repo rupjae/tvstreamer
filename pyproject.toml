@@ -28,6 +28,7 @@ tvws = "tvstreamer.cli:run"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
+anyio = "^4.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
