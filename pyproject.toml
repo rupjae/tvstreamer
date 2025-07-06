@@ -1,7 +1,9 @@
 [tool.poetry]
 name = "tvstreamer"
-# Keep version in sync with tvstreamer.__init__.__version__
-# keep semantic version starting at 0.1.x while project is in early development
+# Version is the **single source of truth**. `tvstreamer.__init__.__version__`
+# is populated at runtime via `importlib.metadata.version()` to avoid keeping
+# multiple copies in sync.
+# Keep semantic version starting at 0.1.x while project is in early development
 version = "0.1.0"
 # Stream live & historical market data from TradingView’s undocumented
 # WebSocket API.

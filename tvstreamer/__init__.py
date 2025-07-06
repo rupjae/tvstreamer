@@ -40,7 +40,37 @@ __all__ = [
 # Single-source versioning
 # --------------------------------------------------------------------
 
-__version__ = "0.1.0"
+# --------------------------------------------------------------------
+# Single-source versioning – rely on importlib.metadata so the value stays in
+# sync with *pyproject.toml*.  Fall back to reading the TOML directly when the
+# package is executed from a source checkout (not installed).
+# --------------------------------------------------------------------
+
+from importlib import metadata as _metadata
+
+
+try:
+    __version__: str = _metadata.version(__name__)
+except _metadata.PackageNotFoundError:  # pragma: no cover – dev environment only
+    # Fallback for editable/source checkouts: parse *pyproject.toml* to obtain
+    # the version string.  This avoids the need to maintain a duplicate value.
+    import pathlib as _pl
+    import sys as _sys
+
+    _root = _pl.Path(__file__).resolve().parents[1]
+    _toml_path = _root / "pyproject.toml"
+    if _toml_path.exists():
+        try:
+            import tomllib as _tomllib  # Python 3.11+
+        except ModuleNotFoundError:  # pragma: no cover – older runtime
+            import tomli as _tomllib  # type: ignore
+
+        with _toml_path.open("rb") as _fp:
+            _data = _tomllib.load(_fp)
+        __version__ = _data["tool"]["poetry"]["version"]
+    else:
+        __version__ = "0.0.0.dev0"
+
 
 # Public re-exports ---------------------------------------------------
 
