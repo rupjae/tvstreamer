@@ -26,6 +26,7 @@ tomli = { version = "^2.0.1", python = "<3.11" }
 # -------------------------------------------------------------------
 # Optional dependency groups (install via `pip install tvstreamer[cli]`)
 # -------------------------------------------------------------------
+pytest-timeout = "^2.4.0"
 
 [tool.poetry.extras]
 cli = ["typer"]
@@ -74,3 +75,11 @@ line-length = 100
 select = ["E", "F", "I"]
 # E501 (line length) overlaps with Black; E402 for late imports in __init__.
 ignore = ["E501", "E402", "F401", "I001"]
+
+# -------------------------------------------------------------------
+# Tool configuration – Pytest (pytest-timeout)
+# -------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+timeout = 5
+timeout_method = "thread"
