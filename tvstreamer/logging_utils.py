@@ -27,10 +27,9 @@ import json
 import logging
 import os
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple, TypeVar
+from typing import Any, Callable, Dict, Tuple, TypeVar
 
 # ---------------------------------------------------------------------------
 # Public constants & helpers
@@ -50,7 +49,7 @@ def _trace(
     """`Logger.trace(msg, *args, **kwargs)` convenience method."""
 
     if self.isEnabledFor(TRACE_LEVEL):
-        self._log(TRACE_LEVEL, msg, args, **kwargs)  # type: ignore[attr-defined]
+        self._log(TRACE_LEVEL, msg, args, **kwargs)
 
 
 # Monkey-patch once to extend the standard `Logger` class.
@@ -74,7 +73,7 @@ class _EnsureCodePathFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:  # noqa: D401 – logging callback
         if not hasattr(record, "code_path"):
-            record.code_path = record.pathname  # type: ignore[attr-defined]
+            record.code_path = record.pathname
         return True
 
 
@@ -284,7 +283,7 @@ def trace(func: F) -> F:  # type: ignore[misc]
     logger = logging.getLogger(func.__module__)
 
     @wraps(func)
-    def _wrapper(*args: Any, **kwargs: Any):  # type: ignore[override]
+    def _wrapper(*args: Any, **kwargs: Any):
         logger.log(
             TRACE_LEVEL,
             f"→ {func.__qualname__}()",

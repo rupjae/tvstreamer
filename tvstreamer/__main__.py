@@ -9,8 +9,6 @@ happens in *tvstreamer.cli*, which already contains a graceful fallback when
 
 from __future__ import annotations
 
-import sys
-
 from .cli import run
 
 
