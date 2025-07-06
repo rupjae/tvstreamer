@@ -75,6 +75,12 @@ def test_handle_payload_tick_and_bar_events() -> None:
     with pytest.raises(queue.Empty):
         q.get_nowait()
 
+    # Malformed tick missing required fields yields no event
+    bad_payload = json.dumps({"m": "qsd", "p": [{}, {}]})
+    client._handle_payload(bad_payload)
+    with pytest.raises(queue.Empty):
+        q.get_nowait()
+
     # Tick event (qsd) yields typed Tick
     ts_ms = 1_600_000_000_000
     payload = json.dumps({"m": "qsd", "p": []})

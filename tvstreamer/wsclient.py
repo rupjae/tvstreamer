@@ -79,6 +79,7 @@ class TvWSClient:
     -------
     ```python
     from tvstreamer import TvWSClient
+    from tvstreamer.events import Tick, Bar
 
     client = TvWSClient(
         [("BINANCE:BTCUSDT", "1"), ("NYSE:MSFT", "1D")],
@@ -87,9 +88,9 @@ class TvWSClient:
 
     client.connect()
     for event in client.stream():
-        if event["type"] == "tick":
+        if isinstance(event, Tick):
             handle_tick(event)
-        elif event["type"] == "bar":
+        elif isinstance(event, Bar):
             handle_bar(event)
     ```
     """
@@ -194,17 +195,10 @@ class TvWSClient:
     # Stream iterator --------------------------------------------------
 
     def stream(self) -> Generator[BaseEvent | Dict[str, Any], None, None]:
-        """Iterate over parsed events coming from the background thread.
+        """Iterate over typed events coming from the background thread.
 
         Yields:
-            dict: A dictionary representing either a *tick* or *bar* event. The
-            exact shape is documented in :pymeth:`_handle_payload` but loosely
-            follows the pattern::
-
-                {
-                    "type": "tick" | "bar",
-                    ...                       # protocol-specific keys
-                }
+            BaseEvent | dict: Either a typed Tick/Bar event or a status dict.
 
         The generator blocks until :meth:`close` is invoked **and** the internal
         queue is drained, making it safe to use in ``for`` loops without
@@ -380,10 +374,14 @@ class TvWSClient:
                 v = info.get("v", {})
                 price = float(v.get("lp", 0.0))
                 volume = float(v.get("volume", 0.0))
-                # timestamp fallback via regex
-                m = self._re_tick.search(payload)
-                if m:
-                    ts = datetime.fromtimestamp(int(m.group("ts")) / 1000, tz=timezone.utc)
+                # prefer timestamp from payload if present, else fallback to regex
+                ts_ms = v.get("upd")
+                if ts_ms:
+                    ts = datetime.fromtimestamp(int(ts_ms) / 1000, tz=timezone.utc)
+                else:
+                    m = self._re_tick.search(payload)
+                    if m:
+                        ts = datetime.fromtimestamp(int(m.group("ts")) / 1000, tz=timezone.utc)
             if symbol and price is not None and volume is not None and ts:
                 tick = Tick(ts=ts, price=price, volume=volume, symbol=symbol)
                 self._q.put(tick)
