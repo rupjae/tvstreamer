@@ -382,8 +382,22 @@ class TvWSClient:
                     m = self._re_tick.search(payload)
                     if m:
                         ts = datetime.fromtimestamp(int(m.group("ts")) / 1000, tz=timezone.utc)
-            if symbol and price is not None and volume is not None and ts:
-                tick = Tick(ts=ts, price=price, volume=volume, symbol=symbol)
+            # Fallback to root-level fields for payloads with direct lp/volume/upd keys
+            if price is None and "lp" in msg:
+                price = float(msg.get("lp", 0.0))
+                volume = float(msg.get("volume", 0.0))
+                upd_val = msg.get("upd")
+                if upd_val:
+                    ts = datetime.fromtimestamp(int(upd_val) / 1000, tz=timezone.utc)
+                else:
+                    m2 = self._re_tick.search(payload)
+                    if m2:
+                        ts = datetime.fromtimestamp(int(m2.group("ts")) / 1000, tz=timezone.utc)
+
+            if price is not None and volume is not None and ts is not None:
+                # Determine symbol if available, default to empty string
+                sym = symbol or msg.get("n", "")
+                tick = Tick(ts=ts, price=price, volume=volume, symbol=sym)
                 self._q.put(tick)
 
         elif method == "series_completed":
