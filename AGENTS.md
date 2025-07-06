@@ -41,8 +41,15 @@ Follow this Git workflow when making code changes:
 7. **Clean up**
    ```bash
    git branch -d rupjae/<brief-topic>
-   git push origin --delete rupjae/<brief-topic>
-   ```
+  git push origin --delete rupjae/<brief-topic>
+  ```
+
+> **Automation note** – When work is executed by the *AI coding agent*, the
+> agent itself should run these Git commands.  Documentation or chat replies
+> **must not** instruct human users to perform repository-management actions
+> such as `git checkout`, `git push`, or branch deletions.  Keeping this logic
+> inside the automated workflow avoids user confusion and prevents accidental
+> mistakes on developer machines.
 
 Following this flow keeps history tidy, accelerates code review, and reduces
 merge conflicts.
