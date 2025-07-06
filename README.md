@@ -137,6 +137,62 @@ Pull requests must ship unit tests for new features and keep `ruff`/`black`
 clean.
 
 
+Project Architecture (Bird’s-eye view)
+--------------------------------------
+
+👉 *Looking for a deeper dive?* Check out
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the complete module-level
+break-down.
+
+```text
+               ┌───────────┐      imports       ┌────────────┐
+               │ tvstreamer│  ────────────────► │ logging_utils │
+               │  facade   │                    └────────────┘
+               │ (__init__)│
+               ▼                           (handles TRACE, Rich console,
+      ┌──────────────┐                       rotating .log/.jsonl files)
+      │  wsclient    │
+      │ (domain)     │ ◄───────────────────────┐
+      └──────────────┘                         │ structured events
+                                               │
+        ▲  JSON lines                          │
+        │  stdout                              │
+        │                                      │ logging records
+   ┌──────────┐   CLI calls  ┌─────────┐       ▼
+   │   User   │ ───────────► │  cli    │──► Rich console / files / JSONL
+   │ scripts  │              └─────────┘
+   └──────────┘
+```
+
+• The **facade** re-exports only three symbols: `TvWSClient`,
+  `configure_logging`, and `trace`.  Everything else is internal.
+• A **single synchronous** websocket connection suffices – no async machinery
+  required.  If you need async, run the client in a background thread or wrap
+  it with `anyio.to_thread.run_sync()`.
+• The CLI keeps zero runtime dependencies when `typer` is not available thanks
+  to the `argparse` fallback implemented inside `tvstreamer.cli`.
+
+Logging Example
+---------------
+
+```python
+from tvstreamer import configure_logging
+
+# Enable finest-grained TRACE level globally and raise wsclient to DEBUG only
+configure_logging(debug=True, debug_module="tvstreamer.wsclient")
+
+import tvstreamer
+
+with tvstreamer.TvWSClient([("BINANCE:BTCUSDT", "1")]) as c:
+    for ev in c.stream():
+        print(ev)
+```
+
+This will emit colourised logs to the terminal *and* create timestamped log
+files under `logs/`, each with a matching `.jsonl` mirror ready for ingestion
+into ELK, Splunk, or your data-warehouse of choice.
+
+
 License
 -------
 

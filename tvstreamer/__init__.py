@@ -1,3 +1,23 @@
+"""tvstreamer package.
+
+Minimal TradingView WebSocket streaming client plus small CLI helper.
+
+Public API
+----------
+The library intentionally keeps its surface area tiny.  Only the following
+symbols are considered **public**:
+
+* ``TvWSClient`` – synchronous WebSocket client for real-time market data.
+* ``configure_logging`` – project-wide logging helper that installs coloured
+  console + rotating file handlers matching the *AGENTS* guidelines.
+* ``trace`` – decorator that logs function entry/exit at the custom TRACE
+  level (numeric value 5).
+
+# Everything else is **internal** and may change without notice.  Import only
+# from the names re-exported via the ``__all__`` list below to stay on the safe
+# side.
+"""
+
 # ---------------------------------------------------------------------------
 # tvstreamer public surface – *streaming only*
 # ---------------------------------------------------------------------------

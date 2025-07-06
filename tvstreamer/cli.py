@@ -102,7 +102,17 @@ if typer is not None:
 
     # Entrypoint ------------------------------------------------------
 
-    def run():  # entrypoint wrapper for poetry console-script
+    def run() -> None:  # entrypoint wrapper for poetry console-script
+        """Console-script entrypoint for the ``tvws`` command.
+
+        The wrapper exists so *poetry* can reference ``tvstreamer.cli:run`` in
+        *pyproject.toml*.  It does nothing more than forward execution to the
+        :pydata:`Typer` application configured above.
+
+        Returns:
+            None
+        """
+
         app()
 
 else:  # -------------------------------------------------------------
@@ -146,8 +156,14 @@ else:  # -------------------------------------------------------------
         )
         return parser
 
-    def run(argv: List[str] | None = None):  # noqa: D401 – console entrypoint
-        """Console-script entrypoint used when *typer* is unavailable."""
+    def run(argv: List[str] | None = None) -> None:  # noqa: D401 – console entrypoint
+        """Console-script entrypoint used when *typer* is unavailable.
+
+        Args:
+            argv: Optional list of raw command-line tokens.  When *None* (the
+                default) :pyclass:`argparse.ArgumentParser` receives
+                ``sys.argv[1:]`` as usual.
+        """
 
         parser = _build_parser()
         args = parser.parse_args(argv)
