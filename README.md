@@ -119,6 +119,8 @@ with StreamRouter(subs) as router:
     router.subscribe(("NYSE:MSFT", "1D"), on_event=on_tick, tick=True)
 ```
 
+See the low-level `TvWSClient` example above for direct generator-based access to events if you need finer control.
+
 ### Command-line
 
 ```bash

@@ -46,6 +46,7 @@ Layers
 4. **Streaming Facade (streaming)** – `StreamRouter` wraps `TvWSClient` and
    exposes iterator and callback APIs for Tick and Bar events, with filtering,
    back-pressure support, and graceful shutdown via context manager.
+   (Currently synchronous only; async variant scheduled for Work-Order #4.)
 5. **Adapter Layer (cli)** – thin CLI wrapper providing both a rich Typer
    experience *and* a zero-dependency argparse fallback for constrained
    environments.
