@@ -44,7 +44,9 @@ if not hasattr(logging, "TRACE"):
     logging.addLevelName(TRACE_LEVEL, "TRACE")
 
 
-def _trace(self: logging.Logger, msg: str, *args: Any, **kwargs: Any):  # noqa: D401 – snake_case keeps parity with logging API
+def _trace(
+    self: logging.Logger, msg: str, *args: Any, **kwargs: Any
+):  # noqa: D401 – snake_case keeps parity with logging API
     """`Logger.trace(msg, *args, **kwargs)` convenience method."""
 
     if self.isEnabledFor(TRACE_LEVEL):
@@ -237,7 +239,9 @@ def configure_logging(*, debug: bool = False, debug_module: str | None = None) -
     # File (human readable)
     file_handler = logging.FileHandler(log_path, encoding="utf-8")
     file_handler.setFormatter(
-        logging.Formatter("%(asctime)s | %(levelname)-8s | %(name)s | %(funcName)s:%(lineno)d - %(message)s")
+        logging.Formatter(
+            "%(asctime)s | %(levelname)-8s | %(name)s | %(funcName)s:%(lineno)d - %(message)s"
+        )
     )
     handlers.append(file_handler)
 
@@ -275,11 +279,17 @@ def trace(func: F) -> F:  # type: ignore[misc]
     logger = logging.getLogger(func.__module__)
 
     def _wrapper(*args: Any, **kwargs: Any):  # type: ignore[override]
-        logger.log(TRACE_LEVEL, f"→ {func.__qualname__}()", extra={"code_path": func.__code__.co_filename})
+        logger.log(
+            TRACE_LEVEL, f"→ {func.__qualname__}()", extra={"code_path": func.__code__.co_filename}
+        )
         try:
             return func(*args, **kwargs)
         finally:
-            logger.log(TRACE_LEVEL, f"← {func.__qualname__}()", extra={"code_path": func.__code__.co_filename})
+            logger.log(
+                TRACE_LEVEL,
+                f"← {func.__qualname__}()",
+                extra={"code_path": func.__code__.co_filename},
+            )
 
     _wrapper.__name__ = func.__name__
     _wrapper.__qualname__ = func.__qualname__

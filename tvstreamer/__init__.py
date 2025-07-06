@@ -84,7 +84,10 @@ import logging as _logging
 
 # Import public helpers after stdlib is ready so that configure_logging can be
 # executed safely.
-from .logging_utils import configure_logging as _configure_logging, trace  # noqa: E402  – after sys modules ready
+from .logging_utils import (
+    configure_logging as _configure_logging,
+    trace,
+)  # noqa: E402  – after sys modules ready
 
 # If the root logger has **no** handlers attached, assume the host application
 # has not configured logging yet and apply the project-wide defaults.  We keep

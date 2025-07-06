@@ -30,6 +30,33 @@ tvws = "tvstreamer.cli:run"
 pytest = "*"
 anyio = "^4.0.0"
 
+# -------------------------------------------------------------------
+# Development tooling – formatting, linting, type-checking
+# -------------------------------------------------------------------
+black = "^24.4.0"
+ruff = "^0.4.0"
+mypy = "^1.10.0"
+
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+# -------------------------------------------------------------------
+# Tool configuration – Black
+# -------------------------------------------------------------------
+
+[tool.black]
+line-length = 100
+target-version = ["py311", "py312", "py313"]
+
+# -------------------------------------------------------------------
+# Tool configuration – Ruff
+# -------------------------------------------------------------------
+
+[tool.ruff]
+line-length = 100
+# Limit rule-set to manageable core: style & error detection.
+select = ["E", "F", "I"]
+# E501 (line length) overlaps with Black; E402 for late imports in __init__.
+ignore = ["E501", "E402", "F401", "I001"]

@@ -116,9 +116,7 @@ class TvWSClient:
                 ``stdout`` **and** the structured log, which is helpful when
                 reverse-engineering protocol changes.
         """
-        self._subs: List[Subscription] = [
-            Subscription(sym, tf) for sym, tf in subscriptions
-        ]
+        self._subs: List[Subscription] = [Subscription(sym, tf) for sym, tf in subscriptions]
         # TradingView rejects history=0; fall back to a sane default
         if n_init_bars is None or n_init_bars <= 0:
             n_init_bars = 300
