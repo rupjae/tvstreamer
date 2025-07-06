@@ -18,3 +18,5 @@ logs/
 .venv/
 env/
 
+# Ignore AGENTS.md as it should not be tracked
+AGENTS.md
