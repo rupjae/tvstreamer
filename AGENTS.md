@@ -65,6 +65,35 @@ merge conflicts.
 
 If in doubt, open a PR—review is fast and keeps history auditable.
 
+### Working with GitHub Issues
+
+Use the authenticated GitHub CLI (`gh`) to triage and inspect issues directly
+from your terminal:
+
+List open issues (latest 20):
+
+```bash
+gh issue list --limit 20
+```
+
+Show full details of a single issue:
+
+```bash
+gh issue view <number>              # interactive display
+gh issue view <number> --json title,body,state   # machine-readable
+```
+
+Create a new issue quickly:
+
+```bash
+gh issue create --title "<short>" --body "<long description>" --label bug
+```
+
+The CLI respects your logged-in account/token, so all operations (list/create/
+comment/close/label) work without additional setup.
+
+---
+
 ---
 
 Project Coding Guidelines (v1.0 – July 2025)
