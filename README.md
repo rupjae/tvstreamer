@@ -96,6 +96,29 @@ for ev in client.stream():
 Close the connection with `client.close()` or simply use a `with` context as
 shown earlier.
 
+### Streaming Facade
+
+The `StreamRouter` offers iterator-based filtering and callback subscriptions
+on top of `TvWSClient`. It supports graceful shutdown via context manager
+and back-pressure via bounded queues.
+
+```python
+from tvstreamer import StreamRouter
+from tvstreamer.events import Tick, Bar
+
+subs = [("BINANCE:BTCUSDT", "1"), ("NYSE:MSFT", "1D")]
+with StreamRouter(subs) as router:
+    # Iterate only closed bars for BTCUSDT @1m
+    for bar in router.iter_closed_bars(("BINANCE:BTCUSDT", "1")):
+        print("closed bar:", bar)
+
+    # Subscribe to ticks for MSFT@1D via callback
+    def on_tick(evt: Tick) -> None:
+        print("tick event:", evt)
+
+    router.subscribe(("NYSE:MSFT", "1D"), on_event=on_tick, tick=True)
+```
+
 ### Command-line
 
 ```bash

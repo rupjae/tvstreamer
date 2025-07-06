@@ -16,20 +16,21 @@ creating tight coupling.
                 │   tvstreamer.__init__     │
                 │ *Facade / composition*    │
                 │ - TvWSClient              │
+                │ - StreamRouter            │
                 │ - configure_logging       │
                 │ - trace decorator         │
                 └────────────┬──────────────┘
                              │ imports
-     ┌───────────────────────┼────────────────────────┐
-     │                       │                        │
-     ▼                       ▼                        ▼
-┌──────────────┐   ┌─────────────────┐     ┌──────────────────┐
-│ logging_utils│   │    wsclient     │     │      cli         │
-│  (infra)     │   │ (domain logic)  │     │ (adapter layer)  │
-└─────┬────────┘   └────────┬────────┘     └────────┬─────────┘
-      │                    │                         │
-      ▼                    ▼                         ▼
-Rich / logging      websocket-client             typer/argparse
+     ┌───────────────────────┼───────────────────┼────────────────────────┐
+     │                       │                   │                        │
+     ▼                       ▼                   ▼                        ▼
+┌──────────────┐   ┌─────────────────┐   ┌──────────────────────┐   ┌──────────────────┐
+│ logging_utils│   │    wsclient     │   │    streaming         │   │      cli         │
+│  (infra)     │   │ (domain logic)  │   │ (streaming facade)   │   │ (adapter layer)  │
+└─────┬────────┘   └────────┬────────┘   └────────────┬─────────┘   └────────┬─────────┘
+      │                    │                         │                         │
+      ▼                    ▼                         ▼                         ▼
+Rich / logging      websocket-client            StreamRouter               typer/argparse
 ```
 
 Layers
@@ -42,7 +43,10 @@ Layers
 3. **Domain Logic (wsclient)** – synchronous WebSocket client that implements
    TradingView’s private protocol.  Exposes a simple generator-based `stream()`
    interface so that callers can decide their own concurrency model.
-4. **Adapter Layer (cli)** – thin CLI wrapper providing both a rich Typer
+4. **Streaming Facade (streaming)** – `StreamRouter` wraps `TvWSClient` and
+   exposes iterator and callback APIs for Tick and Bar events, with filtering,
+   back-pressure support, and graceful shutdown via context manager.
+5. **Adapter Layer (cli)** – thin CLI wrapper providing both a rich Typer
    experience *and* a zero-dependency argparse fallback for constrained
    environments.
 
@@ -77,4 +81,3 @@ Future Extensions
 This document should evolve alongside the code-base.  If you touch more than a
 couple of lines in a core module, update the diagram or bullet-points so that
 newcomers stay on the same page.
-

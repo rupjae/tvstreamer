@@ -1,21 +1,22 @@
 """tvstreamer package.
 
-Minimal TradingView WebSocket streaming client plus small CLI helper.
+High-level streaming facade, WebSocket client, and logging helpers.
 
 Public API
 ----------
-The library intentionally keeps its surface area tiny.  Only the following
-symbols are considered **public**:
+The library intentionally keeps its surface area minimal. The following
+symbols are the supported public interface:
 
-* ``TvWSClient`` – synchronous WebSocket client for real-time market data.
-* ``configure_logging`` – project-wide logging helper that installs coloured
+* ``TvWSClient``      – synchronous WebSocket client for real-time market data.
+* ``StreamRouter``    – high-level router for iterator- and callback-based
+  streaming of Tick and Bar events with filtering and back-pressure.
+* ``configure_logging``– project-wide logging helper that installs coloured
   console + rotating file handlers matching the *AGENTS* guidelines.
-* ``trace`` – decorator that logs function entry/exit at the custom TRACE
-  level (numeric value 5).
+* ``trace``           – decorator that logs function entry/exit at the custom
+  TRACE level (numeric value 5).
 
-# Everything else is **internal** and may change without notice.  Import only
-# from the names re-exported via the ``__all__`` list below to stay on the safe
-# side.
+# Anything else is internal and may change without notice. Import only from
+# the names re-exported in ``__all__`` below to stay compatible.
 """
 
 # ---------------------------------------------------------------------------
@@ -43,11 +44,13 @@ from .logging_utils import (
 
 # Public streaming client
 from .wsclient import TvWSClient
+from .streaming import StreamRouter
 
 # Public re-exports -----------------------------------------------------------
 
 __all__ = [
     "TvWSClient",
+    "StreamRouter",
     "configure_logging",
     "trace",
 ]
