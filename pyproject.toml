@@ -36,6 +36,8 @@ tvws = "tvstreamer.cli:app"
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
 anyio = "^4.0.0"
+pytest-cov = "*"
+coverage = "*"
 
 # -------------------------------------------------------------------
 # Development tooling – formatting, linting, type-checking
