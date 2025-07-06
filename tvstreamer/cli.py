@@ -103,6 +103,13 @@ if typer is not None:
     # Entrypoint ------------------------------------------------------
 
     def run():  # entrypoint wrapper for poetry console-script
+        """CLI entrypoint used by the ``tvws`` console-script.
+
+        The function is declared at module scope so that ``poetry`` can map it
+        directly in *pyproject.toml* (``tvstreamer.cli:run``).  It simply
+        forwards control to the Typer application defined above.
+        """
+
         app()
 
 else:  # -------------------------------------------------------------
