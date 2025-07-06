@@ -1,15 +1,17 @@
 """tvstreamer.cli – Typer-powered command-line interface.
 
-Issue #10 migrated the public CLI from a custom *argparse* script to
-[Typer](https://github.com/tiangolo/typer) to improve UX (§9 – CLI UX).
+Issue #10 migrated the public CLI from a bespoke *argparse* script to
+[Typer](https://github.com/tiangolo/typer) to improve UX (§9 – CLI).  The CLI
+exposes a **single** `stream` command, mirroring the previous interface while
+benefiting from:
 
-The CLI intentionally exposes a **single** command – `stream` – that mirrors
-the public surface of earlier iterations while benefiting from coloured help
-messages, automatic shell-completion, and consistent option parsing.
+• colourised, paged *--help* output,
+• automatic shell-completion, and
+• consistent option parsing semantics.
 
-*Typer* is now a **hard dependency** for the command-line interface.  If the
+Typer is now a **hard dependency** for the command-line surface.  When the
 module is missing we expose stub entry-points that raise a clear
-`ModuleNotFoundError` instructing the user to install the extra.
+`ModuleNotFoundError` pointing the user towards the *cli* extra.
 """
 
 from __future__ import annotations
@@ -128,7 +130,13 @@ else:  # Typer import succeeded ------------------------------------------------
     # --------------------------------------------------------------------
 
     def run() -> None:  # noqa: D401 – `tvws` entry-point
-        """Entry-point used by the *poetry* `[tool.poetry.scripts]` hook."""
+        """Console-script entry-point invoked by *poetry* / *pipx*.
+
+        The wrapper intentionally forwards execution to the Typer *app* so that
+        both the ``tvws`` binary **and** ``python -m tvstreamer.cli`` behave
+        identically.  Keeping a dedicated function makes the mapping explicit
+        in *pyproject.toml* and avoids relying on Typer internals.
+        """
 
         app()
 
