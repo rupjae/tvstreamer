@@ -14,7 +14,7 @@ Follow this Git workflow when making code changes:
 
 1. **Create a topic branch** off `main` (or the active release branch):
    ```bash
-   git checkout -b <username>/<brief-topic>
+   git checkout -b rupjae/<brief-topic>
    ```
 
 2. **Make focused commits**
@@ -23,7 +23,7 @@ Follow this Git workflow when making code changes:
 
 3. **Push to the remote**
    ```bash
-   git push -u origin <username>/<brief-topic>
+   git push -u origin rupjae/<brief-topic>
    ```
 
 4. **Open a Pull Request**
@@ -40,8 +40,8 @@ Follow this Git workflow when making code changes:
 
 7. **Clean up**
    ```bash
-   git branch -d <username>/<brief-topic>
-   git push origin --delete <username>/<brief-topic>
+   git branch -d rupjae/<brief-topic>
+   git push origin --delete rupjae/<brief-topic>
    ```
 
 Following this flow keeps history tidy, accelerates code review, and reduces
