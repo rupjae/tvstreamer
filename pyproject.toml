@@ -24,7 +24,7 @@ typer = "^0.9.0"
 tomli = { version = "^2.0.1", python = "<3.11" }
 
 [tool.poetry.scripts]
-tvws = "tvstreamer.cli:run"
+tvws = "tvstreamer.cli:app"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
@@ -54,8 +54,13 @@ target-version = ["py311", "py312", "py313"]
 # Tool configuration – Ruff
 # -------------------------------------------------------------------
 
+
 [tool.ruff]
 line-length = 100
+
+# New (v0.4+) Lint sub-table ----------------------------------------
+
+[tool.ruff.lint]
 # Limit rule-set to manageable core: style & error detection.
 select = ["E", "F", "I"]
 # E501 (line length) overlaps with Black; E402 for late imports in __init__.
