@@ -23,17 +23,18 @@ import string
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Dict, Generator, List, Tuple
+from typing import Any, Generator, List, Tuple
 
 # Heavy dependency; we import lazily to allow docs / type-checking without runtime package.
+# ruff: noqa: I001
 try:
-    from websocket import create_connection, WebSocket  # type: ignore
+    from websocket import create_connection, WebSocket
 except ModuleNotFoundError:  # pragma: no cover
     # Stub fallback so that type hints work in editor; actual runtime failure will
     # occur when *connect()* is called if dependency missing.
-    WebSocket = object  # type: ignore
+    WebSocket = object
 
-    def create_connection(*_a, **_kw):  # type: ignore
+    def create_connection(*_a: Any, **_kw: Any):
         raise ModuleNotFoundError("websocket-client package is required for TvWSClient")
 
 
@@ -219,13 +220,18 @@ class TvWSClient:
 
     @staticmethod
     def _prepend_header(payload: str) -> str:
+        """Prefix a raw TradingView payload with the length header."""
+
         return f"~m~{len(payload)}~m~{payload}"
 
-    @staticmethod
-    def _construct_msg(func: str, params: List):
+    def _construct_msg(self, func: str, params: List[Any]) -> str:
+        """Return a compact JSON-encoded TradingView message body."""
+
         return json.dumps({"m": func, "p": params}, separators=(",", ":"))
 
-    def _send(self, func: str, params: List):
+    def _send(self, func: str, params: List[Any]) -> None:
+        """Send a single protocol frame over the underlying websocket."""
+
         msg = self._prepend_header(self._construct_msg(func, params))
         if self._ws_debug:
             # Echo to stdout for interactive debugging **and** persist in log files.
@@ -244,8 +250,8 @@ class TvWSClient:
 
     # ---- Handshake / subscribe --------------------------------------
 
-    def _handshake(self):
-        """Authentication token + session creation."""
+    def _handshake(self) -> None:
+        """Perform the initial authentication / session negotiation."""
 
         self._send("set_auth_token", [self._token])
         self._send("chart_create_session", [self._chart_session])
@@ -254,11 +260,11 @@ class TvWSClient:
 
         # NB: we do *not* set quote_set_fields – client may do so later if desired.
 
-    def _subscribe_all(self):
+    def _subscribe_all(self) -> None:
         for sub in self._subs:
             self._subscribe(sub)
 
-    def _subscribe(self, sub: Subscription):
+    def _subscribe(self, sub: Subscription) -> None:
         symbol = sub.symbol
         symbol_upper = symbol.upper()
 
@@ -292,7 +298,7 @@ class TvWSClient:
 
     # ---- Background reader -----------------------------------------
 
-    def _reader_loop(self):
+    def _reader_loop(self) -> None:
         assert self._ws is not None, "WS not connected"
 
         buffer = ""
@@ -341,7 +347,7 @@ class TvWSClient:
         r"qsd\.*?\"lp\":(?P<price>[0-9.]+).*?\"volume\":(?P<vol>[0-9.]+).*?\"upd\":(?P<ts>\d+)"
     )
 
-    def _handle_payload(self, payload: str):
+    def _handle_payload(self, payload: str) -> None:
         try:
             msg = json.loads(payload)
         except json.JSONDecodeError:

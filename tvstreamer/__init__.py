@@ -25,13 +25,29 @@ symbols are considered **public**:
 # This package has been slimmed down to focus exclusively on real-time
 # WebSocket streaming.  All historical-data helpers have been removed.
 
+# Import standard library dependencies first (PEP8 / Ruff I001 compliant)
+import logging as _logging
+from importlib import metadata as _metadata
+
+# ---------------------------------------------------------------------------
+# First-party imports
+# ---------------------------------------------------------------------------
+
+# Import logging helpers *before* TvWSClient so that downstream code that
+# pulls in tvstreamer.TvWSClient receives a ready-to-use logging setup.
+
+from .logging_utils import (
+    configure_logging as _configure_logging,
+    trace,
+)  # noqa: E402 – deferred until stdlib ready
+
+# Public streaming client
 from .wsclient import TvWSClient
 
-# Public re-exports ---------------------------------------------------
+# Public re-exports -----------------------------------------------------------
 
 __all__ = [
     "TvWSClient",
-    # Logging helpers (re-exported for public consumption)
     "configure_logging",
     "trace",
 ]
@@ -46,8 +62,7 @@ __all__ = [
 # package is executed from a source checkout (not installed).
 # --------------------------------------------------------------------
 
-from importlib import metadata as _metadata
-
+# Single-source versioning ----------------------------------------------------
 
 try:
     __version__: str = _metadata.version(__name__)
@@ -80,15 +95,8 @@ except _metadata.PackageNotFoundError:  # pragma: no cover – dev environment o
 # ``configure_logging()`` explicitly.
 # --------------------------------------------------------------------
 
-import logging as _logging
-
 # Import public helpers after stdlib is ready so that configure_logging can be
 # executed safely.
-from .logging_utils import (
-    configure_logging as _configure_logging,
-    trace,
-)  # noqa: E402  – after sys modules ready
-
 # If the root logger has **no** handlers attached, assume the host application
 # has not configured logging yet and apply the project-wide defaults.  We keep
 # this idempotent to avoid clobbering custom setups.

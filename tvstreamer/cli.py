@@ -23,14 +23,13 @@ from typing import List
 
 import tvstreamer
 
-
 # ---------------------------------------------------------------------------
 # Optional import guard – provide helpful error if Typer is absent.
 # ---------------------------------------------------------------------------
 
 
 try:
-    import typer  # type: ignore
+    import typer
 
 except ModuleNotFoundError as _err:  # pragma: no cover – CLI requires Typer
 
@@ -43,7 +42,7 @@ except ModuleNotFoundError as _err:  # pragma: no cover – CLI requires Typer
         )
 
     # Entry-points expected by *poetry* / console-scripts.
-    app = _missing_cli  # type: ignore
+    app = _missing_cli
 
     def run() -> None:  # noqa: D401 – console-script wrapper
         _missing_cli()
