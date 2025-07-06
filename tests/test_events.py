@@ -35,7 +35,6 @@ def test_barbuffer_maxlen_and_slicing() -> None:
 
 def test_client_stream_returns_typed_events() -> None:
     client = TvWSClient([], n_init_bars=1)
-    q = client._q
     # simulate tick payload
     ts_ms = 1_600_000_000_000
     payload = json.dumps({"m": "qsd", "p": []})
