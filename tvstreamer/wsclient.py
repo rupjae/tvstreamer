@@ -61,23 +61,32 @@ class Subscription:
 
 
 class TvWSClient:
-    """Minimal synchronous TradingView WebSocket client.
+    """Synchronous TradingView WebSocket client.
+
+    The class hides all the *wire-protocol* ceremony required to speak to
+    TradingView’s private WebSocket endpoint and exposes a **very** small
+    surface to user space:
+
+    • :meth:`connect` – open the socket and start the background reader.
+    • :meth:`stream` – iterate over parsed *tick* / *bar* events.
+    • :meth:`close`  – shut everything down.
 
     Example
     -------
     ```python
+    from tvstreamer import TvWSClient
+
     client = TvWSClient(
         [("BINANCE:BTCUSDT", "1"), ("NYSE:MSFT", "1D")],
         n_init_bars=500,
     )
-    client.connect()
 
+    client.connect()
     for event in client.stream():
-        match event["type"]:
-            case "tick":
-                ...
-            case "bar":
-                ...
+        if event["type"] == "tick":
+            handle_tick(event)
+        elif event["type"] == "bar":
+            handle_bar(event)
     ```
     """
 
@@ -90,7 +99,23 @@ class TvWSClient:
         n_init_bars: int | None = None,
         token: str = "unauthorized_user_token",
         ws_debug: bool = False,
-    ):
+    ) -> None:
+        """Create a new websocket client instance.
+
+        Args:
+            subscriptions: List of ``(symbol, interval)`` tuples where
+                *symbol* is the TradingView identifier (e.g. ``"BINANCE:BTCUSDT"``)
+                and *interval* is the internal resolution code (``"1"``, ``"1D"`` …).
+            n_init_bars: How many historical bars TradingView should return right
+                after subscribing. ``None`` or ``<=0`` falls back to ``300`` – the
+                smallest value TradingView accepts.
+            token: Authentication token extracted from the TradingView website.
+                For anonymous users the hard-coded ``"unauthorized_user_token"``
+                works fine.
+            ws_debug: When *True*, raw websocket frames are echoed both to
+                ``stdout`` **and** the structured log, which is helpful when
+                reverse-engineering protocol changes.
+        """
         self._subs: List[Subscription] = [
             Subscription(sym, tf) for sym, tf in subscriptions
         ]
@@ -120,7 +145,11 @@ class TvWSClient:
     # ------------------------------------------------------------------
 
     def connect(self):
-        """Open the websocket and start background listener."""
+        """Open the WebSocket connection and spin up the reader thread.
+
+        Raises:
+            RuntimeError: If the client is already connected.
+        """
 
         if self._ws is not None:
             raise RuntimeError("Client already connected")
@@ -160,7 +189,22 @@ class TvWSClient:
     # Stream iterator --------------------------------------------------
 
     def stream(self) -> Generator[dict, None, None]:
-        """Yield events as produced by background thread until *close()* is called."""
+        """Iterate over parsed events coming from the background thread.
+
+        Yields:
+            dict: A dictionary representing either a *tick* or *bar* event. The
+            exact shape is documented in :pymeth:`_handle_payload` but loosely
+            follows the pattern::
+
+                {
+                    "type": "tick" | "bar",
+                    ...                       # protocol-specific keys
+                }
+
+        The generator blocks until :meth:`close` is invoked **and** the internal
+        queue is drained, making it safe to use in ``for`` loops without
+        additional shutdown bookkeeping.
+        """
 
         while not self._stop_flag.is_set() or not self._q.empty():
             try:

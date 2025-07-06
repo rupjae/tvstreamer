@@ -140,6 +140,10 @@ clean.
 Project Architecture (Bird’s-eye view)
 --------------------------------------
 
+👉 *Looking for a deeper dive?* Check out
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the complete module-level
+break-down.
+
 ```text
                ┌───────────┐      imports       ┌────────────┐
                │ tvstreamer│  ────────────────► │ logging_utils │
