@@ -27,7 +27,10 @@ Follow this Git workflow when making code changes:
    ```
 
 4. **Open a Pull Request**
-   • Fill in the PR template: describe _what_ changed and _why_.
+   • Prefer the GitHub CLI: `gh pr create --base main --head <username>/<topic> \
+     --title "<type>: <short description>" --body "<detailed description>"`
+   • Or open it via the web UI—either way, fill out the PR template describing
+     _what_ changed and _why_.
    • Link any related issues and request at least one reviewer.
 
 5. **Incorporate review feedback**
