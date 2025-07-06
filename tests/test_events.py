@@ -5,8 +5,8 @@ import json
 
 import pytest
 
-from tvstreamer.events import BarBuffer, Tick, Bar
-from tvstreamer.wsclient import TvWSClient, Subscription
+from tvstreamer.events import Bar, BarBuffer, Tick
+from tvstreamer.wsclient import Subscription, TvWSClient
 
 
 def test_barbuffer_maxlen_and_slicing() -> None:

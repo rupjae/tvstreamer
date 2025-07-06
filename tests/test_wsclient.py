@@ -9,7 +9,7 @@ import re
 
 import pytest
 
-from tvstreamer.events import Tick, Bar
+from tvstreamer.events import Bar, Tick
 from tvstreamer.wsclient import Subscription, TvWSClient
 
 
