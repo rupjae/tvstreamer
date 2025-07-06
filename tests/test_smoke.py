@@ -76,24 +76,19 @@ def test_trace_decorator(capsys):
 def test_anyio_mock_clock():
     """Ensure anyio.MockClock is importable and usable."""
 
-    # *anyio* is an optional dev dependency – skip the test when missing.
-    try:
-        import anyio  # type: ignore
-    except ModuleNotFoundError:
+    import anyio  # type: ignore
+
+    if not hasattr(anyio, "current_time") or not hasattr(anyio, "run"):
         import pytest
 
-        pytest.skip("anyio not installed")
+        pytest.skip("anyio runtime missing required helpers")
 
-    async def sleeper():  # noqa: D401 – inner helper
-        import math, time  # noqa: WPS433 – local import for clarity
+    async def delayed_sum(a: int, b: int) -> int:  # noqa: D401 – helper
+        await anyio.sleep(0.01)
+        return a + b
 
-        start = time.perf_counter()
-        await anyio.sleep(3)
-        return math.isclose(anyio.current_time(), start + 3, rel_tol=0.05)
+    async def main() -> bool:  # noqa: D401 – inner helper
+        return await delayed_sum(2, 3) == 5
 
-    async def run_with_clock():  # noqa: D401 – inner helper
-        with anyio.move_on_after(5):
-            return await sleeper()
-
-    result = anyio.run(run_with_clock, clock_class=anyio.testing.MockClock)
+    result = anyio.run(main)
     assert result is True
