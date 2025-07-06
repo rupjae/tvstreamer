@@ -23,7 +23,7 @@ import string
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Generator, List, Tuple
+from typing import Any, Dict, Generator, List, Tuple
 
 # Heavy dependency; we import lazily to allow docs / type-checking without runtime package.
 # ruff: noqa: I001
@@ -39,6 +39,9 @@ except ModuleNotFoundError:  # pragma: no cover
 
 
 logger = logging.getLogger(__name__)
+
+# Typed events and buffer
+from tvstreamer.events import BaseEvent, Tick, Bar, BarBuffer
 
 # ---------------------------------------------------------------------------
 # Helper data models
@@ -76,6 +79,7 @@ class TvWSClient:
     -------
     ```python
     from tvstreamer import TvWSClient
+    from tvstreamer.events import Tick, Bar
 
     client = TvWSClient(
         [("BINANCE:BTCUSDT", "1"), ("NYSE:MSFT", "1D")],
@@ -84,9 +88,9 @@ class TvWSClient:
 
     client.connect()
     for event in client.stream():
-        if event["type"] == "tick":
+        if isinstance(event, Tick):
             handle_tick(event)
-        elif event["type"] == "bar":
+        elif isinstance(event, Bar):
             handle_bar(event)
     ```
     """
@@ -134,10 +138,13 @@ class TvWSClient:
         self._quote_session = self._gen_quote_session()
 
         # Outgoing / incoming queues so that user can iterate easily
-        self._q: "queue.Queue[dict]" = queue.Queue()
+        self._q: "queue.Queue[BaseEvent|Dict[str, Any]]" = queue.Queue()
 
         # Background read thread
         self._rx_thread: threading.Thread | None = None
+        # Internal buffer of bars and mapping for subscriptions
+        self._buffer: BarBuffer = BarBuffer(self._n_init_bars)
+        self._series: Dict[str, Subscription] = {}
 
     # ------------------------------------------------------------------
     # Public API
@@ -187,18 +194,11 @@ class TvWSClient:
 
     # Stream iterator --------------------------------------------------
 
-    def stream(self) -> Generator[dict, None, None]:
-        """Iterate over parsed events coming from the background thread.
+    def stream(self) -> Generator[BaseEvent | Dict[str, Any], None, None]:
+        """Iterate over typed events coming from the background thread.
 
         Yields:
-            dict: A dictionary representing either a *tick* or *bar* event. The
-            exact shape is documented in :pymeth:`_handle_payload` but loosely
-            follows the pattern::
-
-                {
-                    "type": "tick" | "bar",
-                    ...                       # protocol-specific keys
-                }
+            BaseEvent | dict: Either a typed Tick/Bar event or a status dict.
 
         The generator blocks until :meth:`close` is invoked **and** the internal
         queue is drained, making it safe to use in ``for`` loops without
@@ -277,6 +277,8 @@ class TvWSClient:
             "quote_add_symbols",
             [self._quote_session, symbol_upper],
         )
+        # track mapping from series id to subscription metadata
+        self._series[series_id] = sub
 
         # Resolve symbol and subscribe for bars
         descriptor = f'={{"symbol":"{symbol_upper}","adjustment":"splits"}}'
@@ -361,14 +363,28 @@ class TvWSClient:
         params = msg.get("p", [])
 
         if method == "qsd":  # quote symbol data – tick updates
-            # We can’t rely on exact structure; quick regex fallback.
-            m = self._re_tick.search(payload)
-            if m:
-                price = float(m.group("price"))
-                vol = float(m.group("vol"))
-                ts = datetime.fromtimestamp(int(m.group("ts")) / 1000, tz=timezone.utc)
-                event = {"type": "tick", "price": price, "volume": vol, "ts": ts}
-                self._q.put(event)
+            # Typed Tick events: parse symbol, price, volume, timestamp
+            symbol = None
+            price = None
+            volume = None
+            ts = None
+            if len(params) > 1 and isinstance(params[1], dict):
+                info = params[1]
+                symbol = info.get("n")
+                v = info.get("v", {})
+                price = float(v.get("lp", 0.0))
+                volume = float(v.get("volume", 0.0))
+                # prefer timestamp from payload if present, else fallback to regex
+                ts_ms = v.get("upd")
+                if ts_ms:
+                    ts = datetime.fromtimestamp(int(ts_ms) / 1000, tz=timezone.utc)
+                else:
+                    m = self._re_tick.search(payload)
+                    if m:
+                        ts = datetime.fromtimestamp(int(m.group("ts")) / 1000, tz=timezone.utc)
+            if symbol and price is not None and volume is not None and ts:
+                tick = Tick(ts=ts, price=price, volume=volume, symbol=symbol)
+                self._q.put(tick)
 
         elif method == "series_completed":
             sub_key = params[1] if len(params) > 1 else ""
@@ -382,23 +398,29 @@ class TvWSClient:
             series_id = params[0]
             bars = params[1]
             for bar_data in bars:
-                # TradingView bar format: [ts, open, high, low, close, volume]
+                # bar format: [ts, open, high, low, close, volume, closed?]
                 if len(bar_data) < 6:
                     continue
                 ts_epoch = bar_data[0] / 1000 if bar_data[0] > 1e12 else bar_data[0]
                 ts = datetime.fromtimestamp(ts_epoch, tz=timezone.utc)
+                sub = self._series.get(series_id)
+                if sub is None:
+                    continue
 
-                event = {
-                    "type": "bar",
-                    "sub": series_id,
-                    "ts": ts,
-                    "open": bar_data[1],
-                    "high": bar_data[2],
-                    "low": bar_data[3],
-                    "close": bar_data[4],
-                    "volume": bar_data[5],
-                    "closed": bar_data[6] if len(bar_data) > 6 else False,
-                }
-                self._q.put(event)
+                closed = bool(bar_data[6]) if len(bar_data) > 6 else False
+                bar = Bar(
+                    ts=ts,
+                    open=bar_data[1],
+                    high=bar_data[2],
+                    low=bar_data[3],
+                    close=bar_data[4],
+                    volume=bar_data[5],
+                    symbol=sub.symbol,
+                    interval=sub.interval,
+                    closed=closed,
+                )
+                # store in internal buffer and emit typed Bar
+                self._buffer.append(bar)
+                self._q.put(bar)
 
         # else: ignore others (ping, etc.)
