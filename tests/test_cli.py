@@ -14,3 +14,13 @@ def test_help_ok():
 
     assert result.exit_code == 0, result.output
     assert "Usage" in result.output or "USAGE" in result.output
+
+def test_history_help():
+    """`tvws history --help` should exit 0 and show history usage."""
+    from typer.testing import CliRunner
+
+    from tvstreamer.cli import app
+
+    result = CliRunner().invoke(app, ["history", "--help"])
+    assert result.exit_code == 0, result.output
+    assert "Fetch historical bars" in result.output

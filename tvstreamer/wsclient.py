@@ -438,3 +438,55 @@ class TvWSClient:
                 self._q.put(bar)
 
         # else: ignore others (ping, etc.)
+
+    def _fetch_history(self, symbol: str, interval: str, n_bars: int) -> list[Bar]:
+        """Private helper: send history_get (via create_series) and collect bars until completed."""
+        sub = Subscription(symbol, interval)
+        alias = sub.key()
+        series_id = f"s{random.randint(1_000, 9_999)}"
+        self._series[series_id] = sub
+
+        sym_up = symbol.upper()
+        # resolve and subscribe for history bars
+        self._send("quote_add_symbols", [self._quote_session, sym_up])
+        desc = f'{{"symbol":"{sym_up}","adjustment":"splits"}}'
+        self._send("resolve_symbol", [self._chart_session, alias, desc])
+        self._send(
+            "create_series",
+            [
+                self._chart_session,
+                series_id,
+                series_id,
+                alias,
+                interval,
+                max(1, n_bars),
+                "",
+            ],
+        )
+
+        bars: list[Bar] = []
+        # collect until history completed marker
+        while True:
+            evt = self._q.get()
+            if isinstance(evt, Bar) and evt.symbol == symbol and evt.interval == interval:
+                bars.append(evt)
+            elif (
+                isinstance(evt, dict)
+                and evt.get("type") == "bar"
+                and evt.get("sub") == alias
+                and evt.get("status") == "completed"
+            ):
+                break
+        return bars
+
+    def get_history(self, symbol: str, interval: str, n_bars: int) -> list[Bar]:
+        """Public: fetch historical bars synchronously (connects if needed)."""
+        own_conn = False
+        if self._ws is None:
+            self.connect()
+            own_conn = True
+        try:
+            return self._fetch_history(symbol, interval, n_bars)
+        finally:
+            if own_conn:
+                self.close()

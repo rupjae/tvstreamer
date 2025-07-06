@@ -23,8 +23,7 @@ symbols are the supported public interface:
 # tvstreamer public surface – *streaming only*
 # ---------------------------------------------------------------------------
 
-# This package has been slimmed down to focus exclusively on real-time
-# WebSocket streaming.  All historical-data helpers have been removed.
+# This package supports both real-time WebSocket streaming and historical data retrieval.
 
 # Import standard library dependencies first (PEP8 / Ruff I001 compliant)
 import logging as _logging

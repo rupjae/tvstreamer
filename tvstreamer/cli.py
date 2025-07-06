@@ -124,6 +124,20 @@ else:  # Typer import succeeded ------------------------------------------------
 
         _run_stream(symbol, interval, init_bars, debug)
 
+    @app.command(no_args_is_help=True)
+    def history(
+        symbol: str = typer.Argument(..., help="TradingView symbol (exchange:SYMBOL)"),
+        interval: str = typer.Argument(..., help="Resolution code (e.g. 1, 1H, 1D)"),
+        n_bars: int = typer.Argument(..., help="Number of historical bars to fetch"),
+        debug: bool = typer.Option(
+            False, "-d", "--debug", help="Print raw websocket frames for troubleshooting."
+        ),
+    ) -> None:
+        """Fetch historical bars for a symbol/interval and emit JSON lines."""
+        client = tvstreamer.TvWSClient([(symbol, interval)], ws_debug=debug)
+        for bar in client.get_history(symbol, interval, n_bars):
+            print(json.dumps(bar, default=str), flush=True)
+
     # --------------------------------------------------------------------
     # Console-script entry-points
     # --------------------------------------------------------------------

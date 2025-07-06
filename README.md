@@ -124,11 +124,15 @@ See the low-level `TvWSClient` example above for direct generator-based access t
 ### Command-line
 
 ```bash
+```bash
 # Subscribe to two symbols, show raw frames for debug purposes
-tvws -s BINANCE:ETHUSDT -s BINANCE:BTCUSDT -i 5 -d
+	tvws -s BINANCE:ETHUSDT -s BINANCE:BTCUSDT -i 5 -d
+
+# Fetch historical bars snapshot for a symbol (no live stream)
+	tvws history BINANCE:BTCUSDT 1 100
 
 # Fetch initial history (500 candles) then continue streaming
-tvws -s NYSE:MSFT -i 1D -n 500 | tee msft.jsonl
+	tvws -s NYSE:MSFT -i 1D -n 500 | tee msft.jsonl
 ```
 
 Run `tvws --help` for the full list of options.
