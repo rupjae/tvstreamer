@@ -8,6 +8,47 @@ still writing code that degrades gracefully if connectivity is ever removed.
 
 ---
 
+## 0 · Contributing Workflow
+
+Follow this Git workflow when making code changes:
+
+1. **Create a topic branch** off `main` (or the active release branch):
+   ```bash
+   git checkout -b <username>/<brief-topic>
+   ```
+
+2. **Make focused commits**
+   • Include tests and docs with the code they cover.
+   • Adopt Conventional Commits prefixes (`feat:`, `fix:`, `docs:`, etc.).
+
+3. **Push to the remote**
+   ```bash
+   git push -u origin <username>/<brief-topic>
+   ```
+
+4. **Open a Pull Request**
+   • Fill in the PR template: describe _what_ changed and _why_.
+   • Link any related issues and request at least one reviewer.
+
+5. **Incorporate review feedback**
+   • Add new commits rather than force-pushing when possible.
+
+6. **Merge policy**
+   • All CI checks green.
+   • At least one maintainer approval.
+   • Use squash-merge unless the commit history is intentionally structured.
+
+7. **Clean up**
+   ```bash
+   git branch -d <username>/<brief-topic>
+   git push origin --delete <username>/<brief-topic>
+   ```
+
+Following this flow keeps history tidy, accelerates code review, and reduces
+merge conflicts.
+
+---
+
 Project Coding Guidelines (v1.0 – July 2025)
 
 This file is the single source of truth for contributor-facing rules. If anything here conflicts with code comments, this document wins.
