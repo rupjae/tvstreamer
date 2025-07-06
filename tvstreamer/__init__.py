@@ -55,7 +55,6 @@ except _metadata.PackageNotFoundError:  # pragma: no cover – dev environment o
     # Fallback for editable/source checkouts: parse *pyproject.toml* to obtain
     # the version string.  This avoids the need to maintain a duplicate value.
     import pathlib as _pl
-    import sys as _sys
 
     _root = _pl.Path(__file__).resolve().parents[1]
     _toml_path = _root / "pyproject.toml"
