@@ -1,51 +1,20 @@
-# ---- Python general -------------------------------------------------------
+# Project-wide ignore rules --------------------------------------------------
+
+# Backup files created by sed during in-place edits
+*.bak
+
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
 
-# ---- Distribution / packaging --------------------------------------------
-build/
-dist/
-sdist/
-wheels/
-*.egg-info/
-*.egg
-
-# ---- Virtual environments -------------------------------------------------
-env/
-venv/
-ENV/
-.env/
-.venv/
-env.bak/
-venv.bak/
-
-# ---- Installer / test / coverage artefacts -------------------------------
-.pytest_cache/
-.mypy_cache/
-.hypothesis/
-.tox/
-.nox/
-.coverage*
-coverage.xml
-htmlcov/
-
-# ---- Logs -----------------------------------------------------------------
-logs/
-*.log
-
-# ---- Editor & OS junk -----------------------------------------------------
+# IDEs/editors
 .vscode/
 .idea/
-.ropeproject/
-.spyderproject/
-.spyproject/
-.DS_Store
-Thumbs.db
 
-# ---- Misc -----------------------------------------------------------------
-*.env
-.env.*
-pip-wheel-metadata/
-site/
+# Logs
+logs/
+
+# virtual environments
+.venv/
+env/
 
