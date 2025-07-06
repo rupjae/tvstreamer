@@ -115,6 +115,7 @@ def test_handle_payload_tick_and_bar_events() -> None:
     assert evt3.closed is True
     assert isinstance(evt3.ts, datetime)
 
+
 def test_fetch_history_collects_bars(monkeypatch):
     client = TvWSClient([], n_init_bars=1)
     # stub send to record protocol calls without side-effects
@@ -123,10 +124,28 @@ def test_fetch_history_collects_bars(monkeypatch):
     # prepare sample bars and completion marker
     from datetime import datetime, timezone
 
-    b1 = Bar(ts=datetime(2020, 1, 1, 0, 0, tzinfo=timezone.utc), open=1.0, high=2.0,
-             low=0.5, close=1.5, volume=100.0, symbol="SYM", interval="1", closed=True)
-    b2 = Bar(ts=datetime(2020, 1, 1, 1, 0, tzinfo=timezone.utc), open=1.5, high=2.5,
-             low=1.0, close=2.0, volume=150.0, symbol="SYM", interval="1", closed=True)
+    b1 = Bar(
+        ts=datetime(2020, 1, 1, 0, 0, tzinfo=timezone.utc),
+        open=1.0,
+        high=2.0,
+        low=0.5,
+        close=1.5,
+        volume=100.0,
+        symbol="SYM",
+        interval="1",
+        closed=True,
+    )
+    b2 = Bar(
+        ts=datetime(2020, 1, 1, 1, 0, tzinfo=timezone.utc),
+        open=1.5,
+        high=2.5,
+        low=1.0,
+        close=2.0,
+        volume=150.0,
+        symbol="SYM",
+        interval="1",
+        closed=True,
+    )
     # replace queue with controlled one
     client._q = queue.Queue()
     client._q.put(b1)

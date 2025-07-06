@@ -1,4 +1,4 @@
-tvstreamer – TradingView WebSocket client & mini-CLI
+tvstreamer - TradingView WebSocket client & mini-CLI
 ====================================================
 
 tvstreamer is a **tiny, dependency-light** helper library that lets you stream
@@ -39,7 +39,7 @@ $ tvws -s BINANCE:BTCUSDT -s NYSE:MSFT -i 1D \
 Why another TradingView client?
 -------------------------------
 
-* **One file, one purpose.** The public surface is purposefully minimal – a
+* **One file, one purpose.** The public surface is purposefully minimal - a
   single `TvWSClient` class and a matching `tvws` CLI wrapper.
 * **Zero async complexity.** The client runs synchronously and can therefore be
   dropped into a background thread or process of your choosing.
@@ -57,7 +57,7 @@ Installation
 # PyPI (recommended)
 pip install tvstreamer
 
-# From source – editable for local development
+# From source - editable for local development
 git clone https://example.com/your-fork/tvstreamer.git
 cd tvstreamer
 pip install -e .[dev]
@@ -213,7 +213,7 @@ break-down.
 
 • The **facade** re-exports only three symbols: `TvWSClient`,
   `configure_logging`, and `trace`.  Everything else is internal.
-• A **single synchronous** websocket connection suffices – no async machinery
+• A **single synchronous** websocket connection suffices - no async machinery
   required.  If you need async, run the client in a background thread or wrap
   it with `anyio.to_thread.run_sync()`.
 • The CLI keeps zero runtime dependencies when `typer` is not available thanks
@@ -243,7 +243,7 @@ into ELK, Splunk, or your data-warehouse of choice.
 License
 -------
 
-This project is licensed under the MIT License – see `LICENSE` for details.
+This project is licensed under the MIT License - see `LICENSE` for details.
 
 
 [TradingView]: https://www.tradingview.com/
