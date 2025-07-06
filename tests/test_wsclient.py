@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import json
 import queue
 import re
-from datetime import datetime, timezone
 
 import pytest
 
-from tvstreamer.wsclient import Subscription, TvWSClient
 from tvstreamer.events import Tick, Bar
+from tvstreamer.wsclient import Subscription, TvWSClient
 
 
 def test_construct_and_prepend_header() -> None:
