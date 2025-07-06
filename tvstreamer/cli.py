@@ -90,9 +90,14 @@ if typer is not None:
     @app.command()
     def stream(
         symbol: List[str] = typer.Option(  # noqa: D401 – CLI params
-            ..., "-s", "--symbol", help="TradingView symbol (exchange:SYMBOL). Can repeat.",
+            ...,
+            "-s",
+            "--symbol",
+            help="TradingView symbol (exchange:SYMBOL). Can repeat.",
         ),
-        interval: str = typer.Option("1", "-i", "--interval", help="Resolution code (e.g. 1, 1H, 1D)"),
+        interval: str = typer.Option(
+            "1", "-i", "--interval", help="Resolution code (e.g. 1, 1H, 1D)"
+        ),
         init_bars: int = typer.Option(0, "-n", "--init-bars", help="Initial history bars to fetch"),
         debug: bool = typer.Option(False, "-d", "--debug", help="Print raw WS frames"),
     ):
