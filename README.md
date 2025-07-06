@@ -136,6 +136,23 @@ Development
 Pull requests must ship unit tests for new features and keep `ruff`/`black`
 clean.
 
+### Version bumps
+
+Need to publish a new release?  Run the helper:
+
+```bash
+./scripts/bump_version.sh patch   # or minor / major / <exact>
+```
+
+The script:
+
+1. Updates *pyproject.toml* via `poetry version` (or a fallback if Poetry is
+   unavailable).
+2. Inserts a new dated section into `CHANGELOG.md` right below the **Unreleased** header.
+
+This keeps the runtime `tvstreamer.__version__` (resolved at import-time via
+`importlib.metadata`) in lock-step with the package metadata.
+
 
 Project Architecture (Bird’s-eye view)
 --------------------------------------
