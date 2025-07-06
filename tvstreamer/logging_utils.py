@@ -28,7 +28,7 @@ import logging
 import os
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Optional, Tuple, TypeVar
 
@@ -138,8 +138,13 @@ class JsonLinesHandler(logging.Handler):
 # ---------------------------------------------------------------------------
 
 
+# Python 3.12 deprecates `datetime.utcnow()`.  Use timezone-aware timestamps.
+
+
 def _make_timestamp() -> str:
-    return datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    """Return a compact UTC timestamp suitable for filenames (YYYYMMDD-HHMMSS)."""
+
+    return datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
 
 
 def _purge_old_logs(log_dir: Path, keep: int = 10):
