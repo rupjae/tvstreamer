@@ -32,6 +32,11 @@ def test_configure_logging_creates_files(tmp_path: Path, monkeypatch):
     assert log_path.exists(), "Human-readable log file missing"
     assert json_path.exists(), "Structured JSONL log file missing"
 
+    # Suppress console output once files exist; target only JSONL handler
+    root = logging.getLogger()
+    for h in list(root.handlers):
+        if isinstance(h, logging.StreamHandler):
+            root.removeHandler(h)
     # The JSONL file must contain at least one well-formed record after we log.
     logger = logging.getLogger("test")
     logger.info("hello from pytest", extra={"code_path": __file__})
@@ -72,10 +77,15 @@ def test_trace_decorator(capsys):
     assert "→" in captured and "sample()" in captured
     assert "←" in captured and "sample()" in captured
 
+    # Clean up handlers to avoid side-effects on subsequent tests
+    root.handlers.clear()
+
 
 def test_anyio_mock_clock():
     """Ensure anyio.MockClock is importable and usable."""
 
+    # Ensure logging handlers are cleared to avoid writing to closed streams
+    logging.getLogger().handlers.clear()
     import anyio  # type: ignore
 
     if not hasattr(anyio, "current_time") or not hasattr(anyio, "run"):
