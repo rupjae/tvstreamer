@@ -47,6 +47,24 @@ Follow this Git workflow when making code changes:
 Following this flow keeps history tidy, accelerates code review, and reduces
 merge conflicts.
 
+### Direct pushes vs. Pull Requests
+
+• **Default:** _Always_ use a topic branch and open a Pull Request.
+
+• **Rare direct-push exceptions (no PR needed):**
+  1. Purely cosmetic doc fixes (typos, broken links, badge URLs).
+  2. Non-functional whitespace or formatting tweaks outside `tvstreamer/` and
+     `tests/`.
+  3. Updates to project meta files that do **not** influence runtime, build, or
+     release behaviour (e.g., `.gitattributes`, badge shields).
+
+  In these cases ensure:
+  • CI passes locally.
+  • No one else is concurrently editing the same lines.
+  • Commit still follows Conventional Commit style.
+
+If in doubt, open a PR—review is fast and keeps history auditable.
+
 ---
 
 Project Coding Guidelines (v1.0 – July 2025)
