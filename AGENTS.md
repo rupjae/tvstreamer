@@ -1,3 +1,12 @@
+⚠️  Environment Note (2025-07-06)
+
+The AI-assistant sandbox currently allows outbound internet traffic (ICMP and
+HTTP/HTTPS were verified via `ping google.com` and `curl https://example.com`).
+Assume external connectivity is available when working in this container, but
+still write code that gracefully degrades if the network is restricted.
+
+---
+
 Project Coding Guidelines (v1.0 – July 2025)
 
 This file is the single source of truth for contributor-facing rules. If anything here conflicts with code comments, this document wins.
