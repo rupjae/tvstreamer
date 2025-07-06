@@ -7,6 +7,7 @@ with just a handful of lines:
 
 ```python
 from tvstreamer import TvWSClient
+from tvstreamer.events import Tick, Bar
 
 # Subscribe to BTC/USDT 1-minute candles **and** MSFT daily bars
 subs = [
@@ -16,11 +17,10 @@ subs = [
 
 with TvWSClient(subs, n_init_bars=500) as client:
     for event in client.stream():
-        match event["type"]:
-            case "tick":
-                handle_tick(event)
-            case "bar":
-                handle_bar(event)
+        if isinstance(event, Tick):
+            handle_tick(event)
+        elif isinstance(event, Bar):
+            handle_bar(event)
 ```
 
 Or directly from the command-line:
@@ -81,15 +81,16 @@ Usage
 
 ```python
 from tvstreamer import TvWSClient
+from tvstreamer.events import Tick, Bar
 
 client = TvWSClient([("BINANCE:BTCUSDT", "1")], n_init_bars=300)
 client.connect()
 
 for ev in client.stream():
-    if ev["type"] == "tick":
-        print("last price:", ev["price"])
-    elif ev["type"] == "bar" and ev.get("closed"):
-        print("closed candle at", ev["ts"], "close=", ev["close"])
+    if isinstance(ev, Tick):
+        print("last price:", ev.price)
+    elif isinstance(ev, Bar) and ev.closed:
+        print("closed candle at", ev.ts, "close=", ev.close)
 ```
 
 Close the connection with `client.close()` or simply use a `with` context as

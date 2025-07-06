@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 import pytest
 
 from tvstreamer.wsclient import Subscription, TvWSClient
+from tvstreamer.events import Tick, Bar
 
 
 def test_construct_and_prepend_header() -> None:
@@ -74,18 +75,16 @@ def test_handle_payload_tick_and_bar_events() -> None:
     with pytest.raises(queue.Empty):
         q.get_nowait()
 
-    # Tick event (qsd)
+    # Tick event (qsd) yields typed Tick
     ts_ms = 1_600_000_000_000
-    # embed required fields for regex
     payload = json.dumps({"m": "qsd", "p": []})
-    # insert fields before closing brace
     payload = payload[:-1] + f', "lp":1.23, "volume":4.56, "upd":{ts_ms}}}'
     client._handle_payload(payload)
     evt = q.get_nowait()
-    assert evt["type"] == "tick"
-    assert evt["price"] == pytest.approx(1.23)
-    assert evt["volume"] == pytest.approx(4.56)
-    assert isinstance(evt["ts"], datetime) and evt["ts"].tzinfo is timezone.utc
+    assert isinstance(evt, Tick)
+    assert evt.price == pytest.approx(1.23)
+    assert evt.volume == pytest.approx(4.56)
+    assert isinstance(evt.ts, datetime) and evt.ts.tzinfo is timezone.utc
 
     # series_completed -> bar event
     payload = json.dumps({"m": "series_completed", "p": ["x", "alias_key"]})
@@ -93,18 +92,19 @@ def test_handle_payload_tick_and_bar_events() -> None:
     evt2 = q.get_nowait()
     assert evt2 == {"type": "bar", "sub": "alias_key", "status": "completed"}
 
-    # du -> bar events
+    # du -> bar events yields typed Bar and populates buffer
     epoch = 1_600_000_000
     bar_list = [[epoch, 1, 2, 3, 4, 5, True]]
+    # register mapping so event is recognized
+    client._series["s1234"] = Subscription("SYM", "1")
     payload = json.dumps({"m": "du", "p": ["s1234", bar_list]})
     client._handle_payload(payload)
     evt3 = q.get_nowait()
-    assert evt3["type"] == "bar"
-    assert evt3["sub"] == "s1234"
-    assert evt3["open"] == 1
-    assert evt3["high"] == 2
-    assert evt3["low"] == 3
-    assert evt3["close"] == 4
-    assert evt3["volume"] == 5
-    assert evt3["closed"] is True
-    assert isinstance(evt3["ts"], datetime)
+    assert isinstance(evt3, Bar)
+    assert evt3.open == 1
+    assert evt3.high == 2
+    assert evt3.low == 3
+    assert evt3.close == 4
+    assert evt3.volume == 5
+    assert evt3.closed is True
+    assert isinstance(evt3.ts, datetime)
