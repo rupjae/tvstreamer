@@ -1,6 +1,13 @@
 tvstreamer - TradingView WebSocket client & mini-CLI
 ====================================================
 
+<!-- CI status -->
+[![CI status](https://github.com/rupjae/tvstreamer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rupjae/tvstreamer/actions/workflows/ci.yml)
+
+<!-- Codecov coverage -->
+[![codecov](https://codecov.io/gh/rupjae/tvstreamer/branch/main/graph/badge.svg)](https://codecov.io/gh/rupjae/tvstreamer)
+
+
 tvstreamer is a **tiny, dependency-light** helper library that lets you stream
 real-time market data from [TradingView]’s *undocumented* WebSocket endpoint
 with just a handful of lines:
