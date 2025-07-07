@@ -11,6 +11,7 @@ description = "TradingView WebSocket integration & historical data downloader"
 authors = ["Rup Jae <rupjae@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"
+include = ["LICENSE"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: MIT License",
