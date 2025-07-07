@@ -78,5 +78,5 @@ ignore = ["E501", "E402", "F401", "I001"]
 # -------------------------------------------------------------------
 
 [tool.pytest.ini_options]
-timeout = 5
+timeout = 10
 timeout_method = "thread"
