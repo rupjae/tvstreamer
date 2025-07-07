@@ -163,8 +163,9 @@ Development
 * Run the test-suite: `pytest -q`.
 * Apply the pre-commit hooks before pushing: `pre-commit run -a`.
 
-The GitHub Actions workflow tests against Python 3.9–3.11 and runs
-`mypy --strict` alongside the unit tests.
+The GitHub Actions workflow tests against Python 3.9–3.11, runs
+`mypy --strict`, performs a `pip-audit` security check and uploads
+coverage to Codecov.
 
 Pull requests must ship unit tests for new features and keep `ruff`/`black`
 clean.
