@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 
@@ -12,9 +12,9 @@ from tvstreamer.streaming import StreamRouter
 def dummy_stream(monkeypatch):
     # Prepare a fixed sequence: one Tick, then one closed Bar
     events = [
-        Tick(ts=datetime.utcnow(), price=1.0, volume=1, symbol="FOO"),
+        Tick(ts=datetime.now(timezone.utc), price=1.0, volume=1, symbol="FOO"),
         Bar(
-            ts=datetime.utcnow(),
+            ts=datetime.now(timezone.utc),
             open=1.0,
             high=1.0,
             low=1.0,
