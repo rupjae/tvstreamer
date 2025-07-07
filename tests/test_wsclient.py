@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from __future__ import annotations
+
 import json
 import queue
 import re
+import time
+from datetime import datetime, timezone
 
 import pytest
 
@@ -154,3 +157,14 @@ def test_fetch_history_collects_bars(monkeypatch):
     client._q.put({"type": "bar", "sub": alias, "status": "completed"})
     result = client._fetch_history("SYM", "1", 2)
     assert result == [b1, b2]
+
+
+def test_fetch_history_timeout(monkeypatch):
+    client = TvWSClient([], n_init_bars=1)
+    # stub out protocol sends to avoid side-effects
+    monkeypatch.setattr(client, "_send", lambda *args, **kwargs: None)
+    # no events enqueued => should time out
+    with pytest.raises(TimeoutError):
+        client._fetch_history("SYM", "1", 1)
+    # ensure subscription mapping cleaned up
+    assert not client._series
