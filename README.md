@@ -1,5 +1,6 @@
-tvstreamer - TradingView WebSocket client & mini-CLI
-====================================================
+# tvstreamer
+
+Modern TradingView WebSocket client & CLI toolkit.
 
 <!-- CI status -->
 [![CI status](https://github.com/rupjae/tvstreamer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rupjae/tvstreamer/actions/workflows/ci.yml)
@@ -9,8 +10,22 @@ tvstreamer - TradingView WebSocket client & mini-CLI
 
 
 tvstreamer is a **tiny, dependency-light** helper library that lets you stream
-real-time market data from [TradingView]’s *undocumented* WebSocket endpoint
-with just a handful of lines:
+real-time market data from [TradingView]’s *undocumented* WebSocket endpoint.
+
+<!-- TOC -->
+- [Quick Start](#quick-start)
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Logging](#logging)
+- [Development](#development)
+- [Project Architecture](#project-architecture-birds-eye-view)
+- [License](#license)
+<!-- /TOC -->
+
+### Quick start
+
+Start streaming market data in seconds:
 
 ```python
 from tvstreamer import TvWSClient
@@ -30,7 +45,7 @@ with TvWSClient(subs, n_init_bars=500) as client:
             handle_bar(event)
 ```
 
-Or directly from the command-line:
+### CLI quick demo
 
 ```bash
 $ tvws -s BINANCE:BTCUSDT -s NYSE:MSFT -i 1D \
@@ -43,18 +58,14 @@ $ tvws -s BINANCE:BTCUSDT -s NYSE:MSFT -i 1D \
 > warning.
 
 
-Why another TradingView client?
--------------------------------
+Features
+--------
 
 * **One file, one purpose.** The public surface is purposefully minimal - a
   single `TvWSClient` class and a matching `tvws` CLI wrapper.
-* **Zero async complexity.** The client runs synchronously and can therefore be
-  dropped into a background thread or process of your choosing.
-* **Lean dependency tree.** Only [`websocket-client`] (runtime) and *optionally*
-  [`typer`] (rich CLI) are required.
-* **Structured logging out of the box.** `configure_logging()` follows the
-  project-wide guidelines and writes coloured **Rich** console output *plus*
-  rotating `.log` and `.jsonl` files under `logs/`.
+* **Zero async complexity.** The client runs synchronously and can therefore be dropped into a background thread or process of your choosing.
+* **Lean dependency tree.** Only [`websocket-client`] (runtime) and *optionally* [`typer`] (rich CLI) are required.
+* **Structured logging out of the box.** `configure_logging()` follows the project-wide guidelines and writes coloured **Rich** console output *plus* rotating `.log` and `.jsonl` files under `logs/`.
 
 
 Installation

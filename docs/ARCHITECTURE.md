@@ -5,6 +5,8 @@ The code-base is intentionally small, yet following an explicit layering helps
 contributors reason about responsibilities and extend the project without
 creating tight coupling.
 
+For installation and a high-level overview head over to the [README](../README.md).
+
 ```
                 ┌───────────────────────────┐
                 │       User  Code          │
