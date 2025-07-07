@@ -1,4 +1,4 @@
-tvstreamer – TradingView WebSocket client & mini-CLI
+tvstreamer - TradingView WebSocket client & mini-CLI
 ====================================================
 
 tvstreamer is a **tiny, dependency-light** helper library that lets you stream
@@ -39,7 +39,7 @@ $ tvws -s BINANCE:BTCUSDT -s NYSE:MSFT -i 1D \
 Why another TradingView client?
 -------------------------------
 
-* **One file, one purpose.** The public surface is purposefully minimal – a
+* **One file, one purpose.** The public surface is purposefully minimal - a
   single `TvWSClient` class and a matching `tvws` CLI wrapper.
 * **Zero async complexity.** The client runs synchronously and can therefore be
   dropped into a background thread or process of your choosing.
@@ -57,7 +57,7 @@ Installation
 # PyPI (recommended)
 pip install tvstreamer
 
-# From source – editable for local development
+# From source - editable for local development
 git clone https://example.com/your-fork/tvstreamer.git
 cd tvstreamer
 pip install -e .[dev]
@@ -124,11 +124,15 @@ See the low-level `TvWSClient` example above for direct generator-based access t
 ### Command-line
 
 ```bash
+```bash
 # Subscribe to two symbols, show raw frames for debug purposes
-tvws -s BINANCE:ETHUSDT -s BINANCE:BTCUSDT -i 5 -d
+	tvws -s BINANCE:ETHUSDT -s BINANCE:BTCUSDT -i 5 -d
+
+# Fetch historical bars snapshot for a symbol (no live stream)
+	tvws history BINANCE:BTCUSDT 1 100
 
 # Fetch initial history (500 candles) then continue streaming
-tvws -s NYSE:MSFT -i 1D -n 500 | tee msft.jsonl
+	tvws -s NYSE:MSFT -i 1D -n 500 | tee msft.jsonl
 ```
 
 Run `tvws --help` for the full list of options.
@@ -209,7 +213,7 @@ break-down.
 
 • The **facade** re-exports only three symbols: `TvWSClient`,
   `configure_logging`, and `trace`.  Everything else is internal.
-• A **single synchronous** websocket connection suffices – no async machinery
+• A **single synchronous** websocket connection suffices - no async machinery
   required.  If you need async, run the client in a background thread or wrap
   it with `anyio.to_thread.run_sync()`.
 • The CLI keeps zero runtime dependencies when `typer` is not available thanks
@@ -239,7 +243,7 @@ into ELK, Splunk, or your data-warehouse of choice.
 License
 -------
 
-This project is licensed under the MIT License – see `LICENSE` for details.
+This project is licensed under the MIT License - see `LICENSE` for details.
 
 
 [TradingView]: https://www.tradingview.com/

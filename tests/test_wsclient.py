@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from __future__ import annotations
+
 import json
 import queue
 import re
+import time
+from datetime import datetime, timezone
 
 import pytest
 
@@ -114,3 +117,54 @@ def test_handle_payload_tick_and_bar_events() -> None:
     assert evt3.volume == 5
     assert evt3.closed is True
     assert isinstance(evt3.ts, datetime)
+
+
+def test_fetch_history_collects_bars(monkeypatch):
+    client = TvWSClient([], n_init_bars=1)
+    # stub send to record protocol calls without side-effects
+    sent: list = []
+    monkeypatch.setattr(client, "_send", lambda func, params: sent.append((func, params)))
+    # prepare sample bars and completion marker
+    from datetime import datetime, timezone
+
+    b1 = Bar(
+        ts=datetime(2020, 1, 1, 0, 0, tzinfo=timezone.utc),
+        open=1.0,
+        high=2.0,
+        low=0.5,
+        close=1.5,
+        volume=100.0,
+        symbol="SYM",
+        interval="1",
+        closed=True,
+    )
+    b2 = Bar(
+        ts=datetime(2020, 1, 1, 1, 0, tzinfo=timezone.utc),
+        open=1.5,
+        high=2.5,
+        low=1.0,
+        close=2.0,
+        volume=150.0,
+        symbol="SYM",
+        interval="1",
+        closed=True,
+    )
+    # replace queue with controlled one
+    client._q = queue.Queue()
+    client._q.put(b1)
+    client._q.put(b2)
+    alias = Subscription("SYM", "1").key()
+    client._q.put({"type": "bar", "sub": alias, "status": "completed"})
+    result = client._fetch_history("SYM", "1", 2)
+    assert result == [b1, b2]
+
+
+def test_fetch_history_timeout(monkeypatch):
+    client = TvWSClient([], n_init_bars=1)
+    # stub out protocol sends to avoid side-effects
+    monkeypatch.setattr(client, "_send", lambda *args, **kwargs: None)
+    # no events enqueued => should time out
+    with pytest.raises(TimeoutError):
+        client._fetch_history("SYM", "1", 1)
+    # ensure subscription mapping cleaned up
+    assert not client._series

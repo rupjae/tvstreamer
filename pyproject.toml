@@ -23,19 +23,16 @@ websocket-client = ">=0.57.0"
 typer = "^0.9.0"
 tomli = { version = "^2.0.1", python = "<3.11" }
 
-# -------------------------------------------------------------------
-# Optional dependency groups (install via `pip install tvstreamer[cli]`)
-# -------------------------------------------------------------------
-pytest-timeout = "^2.4.0"
-
 [tool.poetry.extras]
 cli = ["typer"]
+dev = ["pytest", "pytest-timeout", "anyio", "pytest-cov", "coverage"]
 
 [tool.poetry.scripts]
 tvws = "tvstreamer.cli:app"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
+pytest-timeout = "^2.4.0"
 anyio = "^4.0.0"
 pytest-cov = "*"
 coverage = "*"

@@ -20,6 +20,7 @@ import queue
 import random
 import re
 import string
+import time
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -438,3 +439,108 @@ class TvWSClient:
                 self._q.put(bar)
 
         # else: ignore others (ping, etc.)
+
+    def _fetch_history(self, symbol: str, interval: str, n_bars: int) -> list[Bar]:
+        """Internal: send history_get frames, collect up to n_bars, and wait for completion.
+
+        Raises:
+            TimeoutError: if no completion event arrives within timeout.
+        """
+        logger = logging.getLogger(__name__)
+        sub = Subscription(symbol, interval)
+        alias = sub.key()
+        series_id = f"s{random.randint(1_000, 9_999)}"
+        self._series[series_id] = sub
+
+        sym_up = symbol.upper()
+        logger.debug(
+            "Requesting %d history bars for %s %s",
+            n_bars,
+            symbol,
+            interval,
+            extra={"code_path": __file__},
+        )
+        # resolve and subscribe for history bars
+        self._send("quote_add_symbols", [self._quote_session, sym_up])
+        desc = f'{{"symbol":"{sym_up}","adjustment":"splits"}}'
+        self._send("resolve_symbol", [self._chart_session, alias, desc])
+        self._send(
+            "create_series",
+            [
+                self._chart_session,
+                series_id,
+                series_id,
+                alias,
+                interval,
+                max(1, n_bars),
+                "",
+            ],
+        )
+
+        bars: list[Bar] = []
+        completed = False
+        deadline = time.monotonic() + max(5.0, 0.1 * n_bars)
+        while not completed and len(bars) < n_bars:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                # clean up series mapping
+                self._series.pop(series_id, None)
+                logger.warning(
+                    "Timeout fetching history for %s %s",
+                    symbol,
+                    interval,
+                    extra={"code_path": __file__},
+                )
+                raise TimeoutError(f"History fetch timeout for {symbol}:{interval}")
+            try:
+                evt = self._q.get(timeout=remaining)
+            except queue.Empty:
+                continue
+            if isinstance(evt, Bar) and evt.symbol == symbol and evt.interval == interval:
+                bars.append(evt)
+            elif (
+                isinstance(evt, dict)
+                and evt.get("type") == "bar"
+                and evt.get("sub") == alias
+                and evt.get("status") == "completed"
+            ):
+                completed = True
+
+        # clean up series mapping
+        self._series.pop(series_id, None)
+        logger.debug(
+            "Fetched %d history bars for %s %s",
+            len(bars),
+            symbol,
+            interval,
+            extra={"code_path": __file__},
+        )
+        return bars
+
+    def get_history(self, symbol: str, interval: str, n_bars: int) -> list[Bar]:
+        """
+        Fetch historical bars synchronously (with its own queue to isolate from live stream).
+
+        Args:
+            symbol: TradingView symbol (exchange:SYMBOL).
+            interval: Resolution code (e.g. '1', '1D').
+            n_bars: Number of bars to fetch.
+
+        Returns:
+            List[Bar]: Historical bars collected.
+
+        Raises:
+            TimeoutError: If no completion event is received in time.
+        """
+        own_conn = False
+        if self._ws is None:
+            self.connect()
+            own_conn = True
+        old_q = self._q
+        self._q = queue.Queue()
+        try:
+            return self._fetch_history(symbol, interval, n_bars)
+        finally:
+            self._q = old_q
+            if own_conn:
+                self.close()
