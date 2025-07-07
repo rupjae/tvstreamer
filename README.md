@@ -63,6 +63,7 @@ Installation
 ```bash
 # PyPI (recommended)
 pip install tvstreamer
+pip install tvstreamer[cli]
 
 # From source - editable for local development
 git clone https://example.com/your-fork/tvstreamer.git

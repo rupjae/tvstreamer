@@ -12,6 +12,12 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
  - Continuous integration now caches Poetry by lock hash, runs `pip-audit`,
    and uploads coverage to Codecov.
 
+## [0.1.1] - 2025-07-07
+
+### Added
+ - Packaging metadata hardened with author details and Trove classifiers.
+ - `tvws` console script and CLI optional-extra declared for PyPI release.
+
 ## [0.1.0] - 2025-07-06
 
 ### Added
