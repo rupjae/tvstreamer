@@ -4,13 +4,26 @@ name = "tvstreamer"
 # is populated at runtime via `importlib.metadata.version()` to avoid keeping
 # multiple copies in sync.
 # Keep semantic version starting at 0.1.x while project is in early development
-version = "0.1.0"
+version = "0.1.1"
 # Stream live & historical market data from TradingView’s undocumented
 # WebSocket API.
 description = "TradingView WebSocket integration & historical data downloader"
-authors = ["rupjae"]
+authors = ["Rup Jae <rupjae@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Environment :: Console",
+    "Intended Audience :: Developers"
+]
 # Repository metadata intentionally left blank while project identity is being re-established.
 # homepage = ""
 # repository = ""
