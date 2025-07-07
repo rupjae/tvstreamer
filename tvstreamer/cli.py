@@ -134,9 +134,10 @@ else:  # Typer import succeeded ------------------------------------------------
         ),
     ) -> None:
         """Fetch historical bars for a symbol/interval and emit JSON lines."""
-        client = tvstreamer.TvWSClient([(symbol, interval)], ws_debug=debug)
-        for bar in client.get_history(symbol, interval, n_bars):
-            print(json.dumps(bar, default=str), flush=True)
+        # Ensure WebSocket is closed on completion or error
+        with tvstreamer.TvWSClient([(symbol, interval)], ws_debug=debug) as client:
+            for bar in client.get_history(symbol, interval, n_bars):
+                print(json.dumps(bar, default=str), flush=True)
 
     # --------------------------------------------------------------------
     # Console-script entry-points
