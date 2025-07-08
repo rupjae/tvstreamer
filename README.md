@@ -155,6 +155,27 @@ await hub.publish(candle)
 latest = await recv.receive()
 ```
 
+### CandleStream
+
+`CandleStream` asynchronously forwards decoded candles through a hub so multiple
+consumers can share a single websocket connection.
+
+```python
+import anyio
+from tvstreamer import CandleHub, CandleStream
+
+async def connect():
+    ...  # return an ``async with`` websocket connection
+
+async def main() -> None:
+    hub = CandleHub()
+    async with CandleStream(connect, [("BINANCE:BTCUSDT", "1m")], hub=hub) as cs:
+        async for candle in cs.subscribe():
+            print(candle.close)
+
+anyio.run(main)
+```
+
 ### Command-line
 
 ```bash
