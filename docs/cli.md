@@ -6,3 +6,5 @@ The `tvws` tool wraps the low-level WebSocket client.
 
 - `--origin` – sets the `Origin` header used during the handshake.
   Default: `https://www.tradingview.com`.
+
+Example: tvws stream --origin https://foo.bar --symbol BINANCE:BTCUSDT
