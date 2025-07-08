@@ -50,12 +50,13 @@ def make_frames(n: int) -> list[str]:
             "p": [
                 "cs_x",
                 {
+                    "n": "SYM",
                     "s1": {
                         "s": [{"i": 1, "v": [ts, 1, 2, 0.5, 1.5, 100]}],
                         "ns": {},
                         "t": "s1",
                         "lbs": {"bar_close_time": ts + 60},
-                    }
+                    },
                 },
             ],
         }
@@ -151,6 +152,7 @@ def test_timeout(monkeypatch, caplog):
 
 
 def test_cache(monkeypatch):
+    historic._cache.clear()
     frames = make_frames(2)
     ws = DummyWS(frames)
     calls = 0

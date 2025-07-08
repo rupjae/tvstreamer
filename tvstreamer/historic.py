@@ -33,7 +33,7 @@ except ModuleNotFoundError:  # pragma: no cover - optional
 
 from .decoder import decode_candle_frame
 from .models import Candle
-from .connection import _normalise_interval
+from .intervals import validate
 
 __all__ = ["get_historic_candles", "TooManyRequestsError"]
 
@@ -157,7 +157,7 @@ async def get_historic_candles(
     >>> await get_historic_candles("BINANCE:BTCUSDT", "1m", limit=200)
     """
 
-    res = _normalise_interval(interval)
+    res = validate(interval)
     sem = _websocket_semaphore
     if sem.locked():
         raise TooManyRequestsError

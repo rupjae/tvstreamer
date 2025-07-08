@@ -9,34 +9,7 @@ from typing import Awaitable, Callable, Set, Tuple
 import anyio
 
 from .logging_utils import TRACE_LEVEL
-
-_ALLOWED_INTERVALS: Set[str] = {
-    "1",
-    "3",
-    "5",
-    "15",
-    "30",
-    "60",
-    "120",
-    "240",
-    "D",
-    "W",
-    "M",
-}
-
-
-def _normalise_interval(raw: str) -> str:
-    cleaned = raw.strip().lower()
-    if cleaned.endswith("m"):
-        cleaned = cleaned[:-1]
-    if cleaned.isdigit():
-        if cleaned not in _ALLOWED_INTERVALS:
-            raise ValueError(f"Unsupported interval: {raw}")
-        return cleaned
-    cleaned = cleaned.upper()
-    if cleaned not in _ALLOWED_INTERVALS:
-        raise ValueError(f"Unsupported interval: {raw}")
-    return cleaned
+from .intervals import validate
 
 
 SendHook = Callable[[str], Awaitable[None]]
@@ -78,7 +51,7 @@ class TradingViewConnection:
         Aliases like ``"5m"`` are accepted. Raises ``ValueError`` for unsupported
         resolutions.
         """
-        res = _normalise_interval(interval)
+        res = validate(interval)
         sym = symbol.upper()
         self._candle_subs.add((sym, res))
         await self._send("quote_add_series", ["qs", sym, res])
