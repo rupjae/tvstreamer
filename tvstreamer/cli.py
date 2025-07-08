@@ -17,9 +17,14 @@ module is missing we expose stub entry-points that raise a clear
 from __future__ import annotations
 
 import json
+import logging
 import signal
 import sys
 from typing import List
+
+import anyio
+from rich.console import Console
+from rich.table import Table
 
 import tvstreamer
 
@@ -64,6 +69,22 @@ else:  # Typer import succeeded ------------------------------------------------
         pretty_exceptions_enable=False,
         no_args_is_help=True,
     )
+
+    # --------------------------------------------------------------------
+    # Global options
+    # --------------------------------------------------------------------
+
+    @app.callback(invoke_without_command=False)
+    def _main(
+        ctx: typer.Context,
+        debug: bool = typer.Option(False, "--debug", help="Enable verbose logging"),
+        quiet: bool = typer.Option(False, "--quiet", help="Suppress informational logs"),
+    ) -> None:
+        """Configure logging before executing subcommands."""
+
+        tvstreamer.configure_logging(debug=debug)
+        if quiet:
+            logging.getLogger().setLevel(logging.WARNING)
 
     # --------------------------------------------------------------------
     # Shared helper driving the streaming loop
@@ -138,6 +159,65 @@ else:  # Typer import succeeded ------------------------------------------------
         with tvstreamer.TvWSClient([(symbol, interval)], ws_debug=debug) as client:
             for bar in client.get_history(symbol, interval, n_bars):
                 print(json.dumps(bar, default=str), flush=True)
+
+    # --------------------------------------------------------------------
+    # Candle utilities
+    # --------------------------------------------------------------------
+
+    candles = typer.Typer(no_args_is_help=True, help="Live and historic candles")
+    app.add_typer(candles, name="candles")
+
+    @candles.command("live", no_args_is_help=True)
+    def candles_live(
+        symbol: str = typer.Option(..., "--symbol", "-s", help="TradingView symbol"),
+        interval: str = typer.Option(..., "--interval", "-i", help="Bar interval"),
+    ) -> None:
+        """Stream candle updates and print OHLC values."""
+
+        async def _run() -> None:
+            try:
+                import websockets  # type: ignore
+            except ModuleNotFoundError:  # pragma: no cover - missing dependency
+                raise typer.Exit(1)
+
+            def _connect():
+                return websockets.connect(tvstreamer.wsclient.TvWSClient.WS_ENDPOINT)
+
+            async with tvstreamer.CandleStream(_connect, [(symbol, interval)]) as cs:
+                async for candle in cs.subscribe():
+                    ts = candle.ts_close.strftime("%Y-%m-%d %H:%M:%S")
+                    print(
+                        f"{ts} | o={candle.open} h={candle.high} l={candle.low} c={candle.close}",
+                        flush=True,
+                    )
+
+        anyio.run(_run)
+
+    @candles.command("hist", no_args_is_help=True)
+    def candles_hist(
+        symbol: str = typer.Option(..., "--symbol", "-s", help="TradingView symbol"),
+        interval: str = typer.Option(..., "--interval", "-i", help="Bar interval"),
+        limit: int = typer.Option(100, "--limit", "-n", help="Number of candles"),
+    ) -> None:
+        """Fetch historic candles and display a Rich table."""
+
+        async def _fetch() -> list[tvstreamer.models.Candle]:
+            return await tvstreamer.get_historic_candles(symbol, interval, limit=limit)
+
+        candles_data = anyio.run(_fetch)
+
+        table = Table(title=f"{symbol} {interval}")
+        table.add_column("Time")
+        table.add_column("Open", justify="right")
+        table.add_column("High", justify="right")
+        table.add_column("Low", justify="right")
+        table.add_column("Close", justify="right")
+
+        for c in candles_data:
+            ts = c.ts_close.strftime("%Y-%m-%d %H:%M:%S")
+            table.add_row(ts, str(c.open), str(c.high), str(c.low), str(c.close))
+
+        Console().print(table)
 
     # --------------------------------------------------------------------
     # Console-script entry-points
