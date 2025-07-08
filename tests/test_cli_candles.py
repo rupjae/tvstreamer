@@ -57,7 +57,11 @@ def test_candles_live(monkeypatch):
         sys.modules, "websockets", types.SimpleNamespace(connect=lambda *a, **k: None)
     )
 
-    res = CliRunner().invoke(app, ["candles", "live", "--symbol", "BTCUSD", "--interval", "5m"])
+    res = CliRunner().invoke(
+        app,
+        ["candles", "live", "--symbol", "BTCUSD", "--interval", "5m"],
+        env={"COLUMNS": "120"},
+    )
     assert res.exit_code == 0
     assert "1.5" in res.output
 
@@ -87,6 +91,7 @@ def test_candles_hist(monkeypatch):
     res = CliRunner().invoke(
         app,
         ["candles", "hist", "--symbol", "NVDA", "--interval", "1h", "--limit", "1"],
+        env={"COLUMNS": "120"},
     )
     assert res.exit_code == 0
     assert "NVDA" in res.output

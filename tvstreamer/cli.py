@@ -23,8 +23,13 @@ import sys
 from typing import List
 
 import anyio
-from rich.console import Console
-from rich.table import Table
+
+try:  # Optional dependency for coloured output
+    from rich.console import Console
+    from rich.table import Table
+except ModuleNotFoundError:  # pragma: no cover - missing optional dep
+    Console = None  # type: ignore[assignment]
+    Table = None  # type: ignore[assignment]
 
 import tvstreamer
 
@@ -106,6 +111,46 @@ else:  # Typer import succeeded ------------------------------------------------
             for event in client.stream():
                 print(json.dumps(event, default=str), flush=True)
 
+    def _validate_interval(_: typer.Context, __: typer.CallbackParam, value: str) -> str:
+        """Return interval as TradingView resolution code."""
+
+        from .models import Candle
+
+        try:
+            delta = Candle._interval_to_timedelta(value)
+        except ValueError as exc:  # pragma: no cover - input validation
+            raise typer.BadParameter(str(exc)) from exc
+
+        minutes = int(delta.total_seconds() / 60)
+        mapping = {
+            1: "1",
+            3: "3",
+            5: "5",
+            15: "15",
+            30: "30",
+            60: "60",
+            120: "120",
+            240: "240",
+            1440: "D",
+            10080: "W",
+            43200: "M",
+        }
+        if minutes not in mapping:
+            raise typer.BadParameter(f"Unsupported interval: {value}")
+        return mapping[minutes]
+
+    def _symbol_option() -> str:
+        return typer.Option(..., "--symbol", "-s", help="TradingView symbol")
+
+    def _interval_option() -> str:
+        return typer.Option(
+            ...,
+            "--interval",
+            "-i",
+            help="Bar interval (e.g. 1m, 5, 15, 1h)",
+            callback=_validate_interval,
+        )
+
     # --------------------------------------------------------------------
     # Commands
     # --------------------------------------------------------------------
@@ -123,8 +168,9 @@ else:  # Typer import succeeded ------------------------------------------------
             "1",
             "-i",
             "--interval",
-            help="Resolution code (e.g. 1, 1H, 1D).",
+            help="Resolution code (e.g. 1m, 5, 1h)",
             rich_help_panel="Subscription",
+            callback=_validate_interval,
         ),
         init_bars: int = typer.Option(
             0,
@@ -148,7 +194,9 @@ else:  # Typer import succeeded ------------------------------------------------
     @app.command(no_args_is_help=True)
     def history(
         symbol: str = typer.Argument(..., help="TradingView symbol (exchange:SYMBOL)"),
-        interval: str = typer.Argument(..., help="Resolution code (e.g. 1, 1H, 1D)"),
+        interval: str = typer.Argument(
+            ..., help="Resolution code (e.g. 1m, 5, 1h)", callback=_validate_interval
+        ),
         n_bars: int = typer.Argument(..., help="Number of historical bars to fetch"),
         debug: bool = typer.Option(
             False, "-d", "--debug", help="Print raw websocket frames for troubleshooting."
@@ -169,8 +217,8 @@ else:  # Typer import succeeded ------------------------------------------------
 
     @candles.command("live", no_args_is_help=True)
     def candles_live(
-        symbol: str = typer.Option(..., "--symbol", "-s", help="TradingView symbol"),
-        interval: str = typer.Option(..., "--interval", "-i", help="Bar interval"),
+        symbol: str = _symbol_option(),
+        interval: str = _interval_option(),
     ) -> None:
         """Stream candle updates and print OHLC values."""
 
@@ -183,20 +231,27 @@ else:  # Typer import succeeded ------------------------------------------------
             def _connect():
                 return websockets.connect(tvstreamer.wsclient.TvWSClient.WS_ENDPOINT)
 
-            async with tvstreamer.CandleStream(_connect, [(symbol, interval)]) as cs:
-                async for candle in cs.subscribe():
-                    ts = candle.ts_close.strftime("%Y-%m-%d %H:%M:%S")
-                    print(
-                        f"{ts} | o={candle.open} h={candle.high} l={candle.low} c={candle.close}",
-                        flush=True,
-                    )
+            try:
+                async with tvstreamer.CandleStream(_connect, [(symbol, interval)]) as cs:
+                    async for candle in cs.subscribe():
+                        ts = candle.ts_close.strftime("%Y-%m-%d %H:%M:%S")
+                        print(
+                            f"{ts} | o={candle.open} h={candle.high} l={candle.low} c={candle.close}",
+                            flush=True,
+                        )
+            except (KeyboardInterrupt, anyio.get_cancelled_exc_class()):
+                msg = "Stream interrupted"
+                if Console:
+                    Console().print(f"[yellow]{msg}[/]")
+                else:
+                    print(msg, file=sys.stderr)
 
         anyio.run(_run)
 
     @candles.command("hist", no_args_is_help=True)
     def candles_hist(
-        symbol: str = typer.Option(..., "--symbol", "-s", help="TradingView symbol"),
-        interval: str = typer.Option(..., "--interval", "-i", help="Bar interval"),
+        symbol: str = _symbol_option(),
+        interval: str = _interval_option(),
         limit: int = typer.Option(100, "--limit", "-n", help="Number of candles"),
     ) -> None:
         """Fetch historic candles and display a Rich table."""
@@ -206,18 +261,26 @@ else:  # Typer import succeeded ------------------------------------------------
 
         candles_data = anyio.run(_fetch)
 
-        table = Table(title=f"{symbol} {interval}")
-        table.add_column("Time")
-        table.add_column("Open", justify="right")
-        table.add_column("High", justify="right")
-        table.add_column("Low", justify="right")
-        table.add_column("Close", justify="right")
+        if Table and Console:
+            table = Table(title=f"{symbol} {interval}")
+            table.add_column("Time")
+            table.add_column("Open", justify="right")
+            table.add_column("High", justify="right")
+            table.add_column("Low", justify="right")
+            table.add_column("Close", justify="right")
 
-        for c in candles_data:
-            ts = c.ts_close.strftime("%Y-%m-%d %H:%M:%S")
-            table.add_row(ts, str(c.open), str(c.high), str(c.low), str(c.close))
+            for c in candles_data:
+                ts = c.ts_close.strftime("%Y-%m-%d %H:%M:%S")
+                table.add_row(ts, str(c.open), str(c.high), str(c.low), str(c.close))
 
-        Console().print(table)
+            Console().print(table)
+        else:  # pragma: no cover - rich missing
+            for c in candles_data:
+                ts = c.ts_close.strftime("%Y-%m-%d %H:%M:%S")
+                print(
+                    f"{symbol} {ts} o={c.open} h={c.high} l={c.low} c={c.close}",
+                    flush=True,
+                )
 
     # --------------------------------------------------------------------
     # Console-script entry-points

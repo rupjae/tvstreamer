@@ -194,6 +194,7 @@ anyio.run(main)
 
 # Fetch last 100 NVDA hourly candles as a table
         tvws candles hist --symbol NASDAQ:NVDA --interval 1h --limit 100
+        # install 'rich' for coloured table output
 ```
 
 Run `tvws --help` for the full list of options.
