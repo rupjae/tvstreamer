@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-"""Interval utilities for TradingView resolutions."""
+"""Interval utilities for TradingView resolutions.
+
+``validate()`` accepts minute-based strings like ``"5m"`` or ``"15"`` as well as
+hour/day/week aliases (e.g. ``"1h"``, ``"1d"``). Sub-minute resolutions are not
+supported and will raise ``ValueError``.
+"""
 
 from typing import Set
 

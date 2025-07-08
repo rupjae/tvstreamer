@@ -9,6 +9,7 @@ import random
 
 from .connection import TradingViewConnection
 from .decoder import decode_candle_frame
+from .intervals import validate
 from .hub import CandleHub
 from .models import Candle
 from .settings import RECONNECT_MAX_DELAY
@@ -32,7 +33,7 @@ class CandleStream:
     ) -> None:
         self._connect = connect
         self._pairs = list(pairs)
-        self._interval_map = {sym.upper(): interval for sym, interval in self._pairs}
+        self._interval_map = {sym.upper(): validate(interval) for sym, interval in self._pairs}
         self._hub = hub or CandleHub()
         self._delay = reconnect_delay
         self._tg: anyio.abc.TaskGroup | None = None
