@@ -60,5 +60,5 @@ def test_invalid_interval(monkeypatch):
 
     import trio
 
-    with pytest.raises(typer.BadParameter):
+    with pytest.raises(ValueError):
         trio.run(main, clock=MockClock())

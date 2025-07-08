@@ -48,6 +48,7 @@ from .connection import TradingViewConnection
 from .hub import CandleHub
 from .streamer import CandleStream
 from .historic import get_historic_candles, TooManyRequestsError
+from .exceptions import MissingDependencyError
 
 # Public re-exports -----------------------------------------------------------
 
@@ -59,6 +60,7 @@ __all__ = [
     "CandleStream",
     "get_historic_candles",
     "TooManyRequestsError",
+    "MissingDependencyError",
     "configure_logging",
     "trace",
 ]

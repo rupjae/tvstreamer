@@ -18,6 +18,7 @@ def to_json(obj: Any) -> str:
         if dataclasses.is_dataclass(o):
             return dataclasses.asdict(o)
         if isinstance(o, datetime.datetime):
+            o = o.astimezone(datetime.timezone.utc)
             return o.isoformat().replace("+00:00", "Z")
         raise TypeError(f"Object of type {type(o).__name__} is not JSON serialisable")
 

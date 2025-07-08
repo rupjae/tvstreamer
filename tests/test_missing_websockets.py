@@ -9,7 +9,7 @@ def test_missing_websockets(monkeypatch):
     import tvstreamer.historic as hist
 
     monkeypatch.setattr(hist, "websockets", None)
-    res = CliRunner().invoke(
+    res = CliRunner(mix_stderr=False).invoke(
         app,
         ["candles", "hist", "--symbol", "SYM", "--interval", "1m", "--limit", "1"],
     )

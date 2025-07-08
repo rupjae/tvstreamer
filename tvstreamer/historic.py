@@ -10,8 +10,9 @@ import string
 import time
 
 import anyio
-import typer
 from typing import Any
+
+from .exceptions import MissingDependencyError
 
 websockets: Any = None
 
@@ -40,12 +41,9 @@ async def _ensure_websockets() -> None:
 
             websockets = _ws
     except ModuleNotFoundError as exc:  # pragma: no cover
-        typer.secho(
-            "Command requires the 'websockets' extra.  Try: pip install tvstreamer[cli]",
-            fg=typer.colors.RED,
-            err=True,
-        )
-        raise typer.Exit(1) from exc
+        raise MissingDependencyError(
+            "Command requires the 'websockets' extra.  Try: pip install tvstreamer[cli]"
+        ) from exc
 
 
 def _tv_msg(method: str, params: list) -> str:

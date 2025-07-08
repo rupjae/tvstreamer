@@ -222,8 +222,8 @@ anyio.run(main)
         # install 'rich' for coloured table output
 ```
 
-`tvws stream` and `tvws history` output line-delimited JSON for easy piping into
-scripts or tools like `jq`.
+`tvws stream` and `tvws history` output valid line-delimited JSON for easy
+piping into scripts or tools like `jq`.
 
 Run `tvws --help` for the full list of options.
 

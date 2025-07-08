@@ -116,13 +116,19 @@ else:  # Typer import succeeded ------------------------------------------------
     def _symbol_option() -> str:
         return typer.Option(..., "--symbol", "-s", help="TradingView symbol")
 
+    def _validate_interval(_c: typer.Context, _p: typer.CallbackParam, v: str) -> str:
+        try:
+            return intervals.validate(v)
+        except ValueError as exc:
+            raise typer.BadParameter(str(exc)) from exc
+
     def _interval_option() -> str:
         return typer.Option(
             ...,
             "--interval",
             "-i",
             help="Bar interval (e.g. 1m, 5, 15, 1h)",
-            callback=lambda _ctx, _param, val: intervals.validate(val),
+            callback=_validate_interval,
         )
 
     # --------------------------------------------------------------------
@@ -144,7 +150,7 @@ else:  # Typer import succeeded ------------------------------------------------
             "--interval",
             help="Resolution code (e.g. 1m, 5, 1h)",
             rich_help_panel="Subscription",
-            callback=lambda _c, _p, v: intervals.validate(v),
+            callback=_validate_interval,
         ),
         init_bars: int = typer.Option(
             0,
@@ -171,7 +177,7 @@ else:  # Typer import succeeded ------------------------------------------------
         interval: str = typer.Argument(
             ...,
             help="Resolution code (e.g. 1m, 5, 1h)",
-            callback=lambda _c, _p, v: intervals.validate(v),
+            callback=_validate_interval,
         ),
         n_bars: int = typer.Argument(..., help="Number of historical bars to fetch"),
         debug: bool = typer.Option(
@@ -201,8 +207,13 @@ else:  # Typer import succeeded ------------------------------------------------
         async def _run() -> None:
             try:
                 import websockets  # type: ignore
-            except ModuleNotFoundError:  # pragma: no cover - missing dependency
-                raise typer.Exit(1)
+            except ModuleNotFoundError as exc:  # pragma: no cover - missing dependency
+                typer.secho(
+                    "Command requires the 'websockets' extra.  Try: pip install tvstreamer[cli]",
+                    fg=typer.colors.RED,
+                    err=True,
+                )
+                raise typer.Exit(1) from exc
 
             def _connect():
                 return websockets.connect(tvstreamer.wsclient.TvWSClient.WS_ENDPOINT)
@@ -235,7 +246,15 @@ else:  # Typer import succeeded ------------------------------------------------
         async def _fetch() -> list[tvstreamer.models.Candle]:
             return await tvstreamer.get_historic_candles(symbol, interval, limit=limit)
 
-        candles_data = anyio.run(_fetch)
+        try:
+            candles_data = anyio.run(_fetch)
+        except tvstreamer.MissingDependencyError as exc:
+            typer.secho(
+                "Command requires the 'websockets' extra.  Try: pip install tvstreamer[cli]",
+                fg=typer.colors.RED,
+                err=True,
+            )
+            raise typer.Exit(1) from exc
 
         if Table is not None and Console is not None:
             table = Table(title=f"{symbol} {interval}")
