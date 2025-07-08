@@ -140,6 +140,21 @@ with StreamRouter(subs) as router:
 
 See the low-level `TvWSClient` example above for direct generator-based access to events if you need finer control.
 
+### In-memory hubs
+
+`CandleHub` and `TickHub` let you broadcast events to multiple consumers in the
+same process.  Calls to ``publish`` are non-blocking; if a subscriber queue is
+full the event is dropped and a TRACE log is emitted.
+
+```python
+from tvstreamer import CandleHub
+
+hub = CandleHub(maxsize=100)
+recv = hub.subscribe()
+await hub.publish(candle)
+latest = await recv.receive()
+```
+
 ### Command-line
 
 ```bash
