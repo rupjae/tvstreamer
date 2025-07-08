@@ -156,6 +156,15 @@ See the low-level `TvWSClient` example above for direct generator-based access t
 
 Run `tvws --help` for the full list of options.
 
+## Demo application
+
+A simple demo script is available at `examples/demo_stream.py`. Run:
+
+```bash
+python examples/demo_stream.py
+```
+
+It subscribes to BTC/USDT (1-minute) and MSFT (1-day) and prints Tick and Bar events to the console.
 
 Logging
 -------
