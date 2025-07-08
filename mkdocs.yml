@@ -1,0 +1,6 @@
+site_name: tvstreamer
+nav:
+  - Home: index.md
+  - Architecture: ARCHITECTURE.md
+  - Candles: candles.md
+docs_dir: docs

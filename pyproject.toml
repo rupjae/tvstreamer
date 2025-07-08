@@ -4,7 +4,7 @@ name = "tvstreamer"
 # is populated at runtime via `importlib.metadata.version()` to avoid keeping
 # multiple copies in sync.
 # Keep semantic version starting at 0.1.x while project is in early development
-version = "0.1.1"
+version = "0.2.0"
 # Stream live & historical market data from TradingView’s undocumented
 # WebSocket API.
 description = "TradingView WebSocket integration & historical data downloader"
