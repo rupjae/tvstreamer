@@ -7,9 +7,7 @@ from tvstreamer.events import Tick, Bar
 
 def handle_tick(event: Tick) -> None:
     """Print tick events to the console."""
-    print(
-        f"[Tick] {event.symbol} @ {event.ts} - price={event.price}, volume={event.volume}"
-    )
+    print(f"[Tick] {event.symbol} @ {event.ts} - price={event.price}, volume={event.volume}")
 
 
 def handle_bar(event: Bar) -> None:

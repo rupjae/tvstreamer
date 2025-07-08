@@ -1,6 +1,8 @@
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 
+import pytest
+
 from tvstreamer.models import Candle
 
 
@@ -28,3 +30,28 @@ def test_from_frame_without_bar_close_time() -> None:
     frame = {"symbol": "SYM", "v": [epoch, 1, 2, 0, 1, 50]}
     c = Candle.from_frame(frame, interval="5m")
     assert c.ts_close - c.ts_open == timedelta(minutes=5)
+
+
+def test_from_frame_defaults_interval() -> None:
+    epoch = 1_600_000_000
+    frame = {"v": [epoch, 1, 1, 1, 1]}
+    c = Candle.from_frame(frame)
+    assert c.interval == "1m"
+    assert c.ts_close - c.ts_open == timedelta(minutes=1)
+
+
+def test_from_frame_uppercase_interval() -> None:
+    epoch = 1_600_000_000
+    frame = {"v": [epoch, 1, 1, 1, 1]}
+    c = Candle.from_frame(frame, interval="15M")
+    assert c.ts_close - c.ts_open == timedelta(minutes=15)
+
+
+def test_from_frame_error_missing_v() -> None:
+    with pytest.raises(ValueError):
+        Candle.from_frame({}, interval="1m")
+
+
+def test_from_frame_error_short_v() -> None:
+    with pytest.raises(ValueError):
+        Candle.from_frame({"v": [1, 2, 3]}, interval="1m")

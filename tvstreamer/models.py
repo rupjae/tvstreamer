@@ -23,7 +23,7 @@ class Candle:
     interval: str = "1m"
 
     @classmethod
-    def from_frame(cls, frame: Mapping[str, Any], *, interval: str) -> "Candle":
+    def from_frame(cls, frame: Mapping[str, Any], *, interval: str = "1m") -> "Candle":
         """Return a :class:`Candle` built from a TradingView frame."""
         data = frame.get("v")
         if not isinstance(data, list) or len(data) < 5:
@@ -49,7 +49,7 @@ class Candle:
         if close_ts_val is not None:
             ts_close = datetime.fromtimestamp(int(close_ts_val), tz=timezone.utc)
         else:
-            ts_close = ts_open + _interval_to_timedelta(interval)
+            ts_close = ts_open + cls._interval_to_timedelta(interval)
 
         symbol = str(frame.get("n") or frame.get("symbol") or "")
         return cls(
@@ -64,14 +64,14 @@ class Candle:
             interval=interval,
         )
 
-
-def _interval_to_timedelta(interval: str) -> timedelta:
-    """Translate interval string to :class:`timedelta`."""
-    s = interval.lower()
-    if s.isdigit():
-        return timedelta(minutes=int(s))
-    units = {"m": "minutes", "h": "hours", "d": "days", "w": "weeks"}
-    for key, attr in units.items():
-        if s.endswith(key) and s[:-1].isdigit():
-            return timedelta(**{attr: int(s[:-1])})
-    raise ValueError(f"unsupported interval: {interval}")
+    @staticmethod
+    def _interval_to_timedelta(interval: str) -> timedelta:
+        """Translate interval string to :class:`timedelta`."""
+        s = interval.lower()
+        if s.isdigit():
+            return timedelta(minutes=int(s))
+        units = {"m": "minutes", "h": "hours", "d": "days", "w": "weeks"}
+        for key, attr in units.items():
+            if s.endswith(key) and s[:-1].isdigit():
+                return timedelta(**{attr: int(s[:-1])})
+        raise ValueError(f"unsupported interval: {interval}")
