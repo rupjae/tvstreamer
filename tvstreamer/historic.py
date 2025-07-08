@@ -1,18 +1,39 @@
 from __future__ import annotations
 
+"""Short-lived websocket helper for historical candles."""
+
 import asyncio
 import json
 import logging
 import random
 import string
 import time
-from functools import lru_cache
 
 import anyio
-import websockets
+
+try:  # optional heavy dependency
+    import websockets  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - optional
+
+    class _MissingWebsockets:
+        @staticmethod
+        def connect(*_a, **_kw):
+            class _Ctx:
+                async def __aenter__(self):  # pragma: no cover - runtime failure
+                    raise ModuleNotFoundError(
+                        "websockets package is required for get_historic_candles"
+                    )
+
+                async def __aexit__(self, exc_type, exc, tb):
+                    return False
+
+            return _Ctx()
+
+    websockets = _MissingWebsockets()
 
 from .decoder import decode_candle_frame
 from .models import Candle
+from .connection import _normalise_interval
 
 __all__ = ["get_historic_candles", "TooManyRequestsError"]
 
@@ -102,28 +123,47 @@ async def _fetch_history(symbol: str, interval: str, limit: int, timeout: float)
     return candles[-limit:]
 
 
-@lru_cache(maxsize=128)
-def _cached_fetch(symbol: str, interval: str, limit: int, timeout: float, ttl: int) -> list[Candle]:
-    return asyncio.run(_fetch_history(symbol, interval, limit, timeout))
+_CACHE_TTL = 60.0
+_CACHE_MAXSIZE = 128
+_cache: dict[tuple[str, str, int], tuple[float, list[Candle]]] = {}
+_cache_lock = asyncio.Lock()
+
+
+async def _cached_fetch(symbol: str, interval: str, limit: int, timeout: float) -> list[Candle]:
+    key = (symbol.upper(), interval, limit)
+    now = time.monotonic()
+    async with _cache_lock:
+        entry = _cache.get(key)
+        if entry and now - entry[0] < _CACHE_TTL:
+            return entry[1]
+    data = await _fetch_history(symbol, interval, limit, timeout)
+    async with _cache_lock:
+        _cache[key] = (now, data)
+        if len(_cache) > _CACHE_MAXSIZE:
+            oldest = min(_cache.items(), key=lambda kv: kv[1][0])[0]
+            _cache.pop(oldest, None)
+    return data
 
 
 async def get_historic_candles(
     symbol: str, interval: str, limit: int = 500, *, timeout: float = 10.0
 ) -> list[Candle]:
-    """Return recent closed candles for ``symbol`` and ``interval``.
+    """Return recent closed candles.
+
+    Results are cached for 60 seconds keyed by ``(symbol, interval, limit)``.
 
     Example
     -------
     >>> await get_historic_candles("BINANCE:BTCUSDT", "1m", limit=200)
     """
 
+    res = _normalise_interval(interval)
     sem = _websocket_semaphore
     if sem.locked():
         raise TooManyRequestsError
     await sem.acquire()
 
     try:
-        ttl = int(time.monotonic() // 60)
-        return await anyio.to_thread.run_sync(_cached_fetch, symbol, interval, limit, timeout, ttl)
+        return await _cached_fetch(symbol, res, limit, timeout)
     finally:
         sem.release()

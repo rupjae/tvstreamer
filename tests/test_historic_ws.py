@@ -1,11 +1,16 @@
 try:
     from anyio.testing import MockClock
 except Exception:  # pragma: no cover - older anyio
-    from trio.testing import MockClock
+    from trio.testing import MockClock as _TrioClock
+
+    def MockClock(*a, **kw):  # type: ignore
+        return _TrioClock(*a, autojump_threshold=0, **kw)
+
 
 import trio
 import anyio
 import logging
+import pytest
 
 import tvstreamer.historic as historic
 from tvstreamer.models import Candle
@@ -88,7 +93,9 @@ def run_fetch(monkeypatch, limit: int, frames: list[str]):
     async def main():
         return await historic.get_historic_candles("SYM", "1", limit, timeout=1)
 
-    return trio.run(main, clock=MockClock())
+    result = trio.run(main, clock=MockClock())
+    assert historic._websocket_semaphore._value == 3
+    return result
 
 
 def test_basic_limits(monkeypatch):
@@ -182,3 +189,34 @@ def test_cache(monkeypatch):
     res2 = trio.run(main2, clock=MockClock())
     assert calls == 1
     assert res1 == res2
+
+
+def test_bad_interval(monkeypatch):
+    frames = make_frames(1)
+
+    class DummyConnect:
+        def __init__(self, ws):
+            self.ws = ws
+
+        def __await__(self):
+            async def _wrap():
+                return self.ws
+
+            return _wrap().__await__()
+
+        async def __aenter__(self):
+            return self.ws
+
+        async def __aexit__(self, exc_type, exc, tb):
+            pass
+
+    def connect(*_a, **_kw):
+        return DummyConnect(DummyWS(frames))
+
+    monkeypatch.setattr(historic.websockets, "connect", connect)
+
+    async def main():
+        await historic.get_historic_candles("SYM", "99", 1)
+
+    with pytest.raises(ValueError):
+        trio.run(main, clock=MockClock())
