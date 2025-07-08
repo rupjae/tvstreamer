@@ -20,6 +20,7 @@ real-time market data from [TradingView]’s *undocumented* WebSocket endpoint.
 - [Logging](#logging)
 - [Development](#development)
 - [Project Architecture](#project-architecture-birds-eye-view)
+- [FAQ](#faq)
 - [License](#license)
 <!-- /TOC -->
 
@@ -341,6 +342,15 @@ with tvstreamer.TvWSClient([("BINANCE:BTCUSDT", "1")]) as c:
 This will emit colourised logs to the terminal *and* create timestamped log
 files under `logs/`, each with a matching `.jsonl` mirror ready for ingestion
 into ELK, Splunk, or your data-warehouse of choice.
+
+FAQ
+---
+
+### Why do I get 403?
+
+TradingView rejects WebSocket handshakes without an `Origin` header. The
+library sends `https://www.tradingview.com` by default; override it with
+`--origin` if needed.
 
 
 License

@@ -33,6 +33,7 @@ except ModuleNotFoundError:  # pragma: no cover - missing optional dep
 
 import tvstreamer
 from . import intervals
+from .constants import DEFAULT_ORIGIN
 from .json_utils import to_json
 
 # ---------------------------------------------------------------------------
@@ -86,12 +87,26 @@ else:  # Typer import succeeded ------------------------------------------------
         ctx: typer.Context,
         debug: bool = typer.Option(False, "--debug", help="Enable verbose logging"),
         quiet: bool = typer.Option(False, "--quiet", help="Suppress informational logs"),
+        origin: str = typer.Option(
+            DEFAULT_ORIGIN,
+            "--origin",
+            help="Origin header for TradingView connections",
+        ),
     ) -> None:
         """Configure logging before executing subcommands."""
 
         tvstreamer.configure_logging(debug=debug)
         if quiet:
             logging.getLogger().setLevel(logging.WARNING)
+        if origin:
+            import tvstreamer.constants as const
+
+            const.DEFAULT_ORIGIN = origin
+        logging.getLogger(__name__).debug(
+            "Origin header set to %s",
+            origin,
+            extra={"code_path": __file__},
+        )
 
     # --------------------------------------------------------------------
     # Shared helper driving the streaming loop
@@ -216,7 +231,11 @@ else:  # Typer import succeeded ------------------------------------------------
                 raise typer.Exit(1) from exc
 
             def _connect():
-                return websockets.connect(tvstreamer.wsclient.TvWSClient.WS_ENDPOINT)
+                return websockets.connect(
+                    tvstreamer.wsclient.TvWSClient.WS_ENDPOINT,
+                    origin=DEFAULT_ORIGIN,  # for websockets ≥11
+                    # ↳ falls back to extra_headers if origin kwarg unsupported
+                )
 
             try:
                 async with tvstreamer.CandleStream(_connect, [(symbol, interval)]) as cs:

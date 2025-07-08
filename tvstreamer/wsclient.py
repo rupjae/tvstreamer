@@ -43,6 +43,7 @@ logger = logging.getLogger(__name__)
 
 # Typed events and buffer
 from tvstreamer.events import BaseEvent, Tick, Bar, BarBuffer
+from .constants import DEFAULT_ORIGIN
 
 # ---------------------------------------------------------------------------
 # Helper data models
@@ -161,8 +162,15 @@ class TvWSClient:
         if self._ws is not None:
             raise RuntimeError("Client already connected")
 
-        logger.debug("Opening TradingView websocket…")
-        self._ws = create_connection(self.WS_ENDPOINT, timeout=7)
+        logger.debug(
+            "Opening TradingView websocket…",
+            extra={"code_path": __file__},
+        )
+        self._ws = create_connection(
+            self.WS_ENDPOINT,
+            timeout=7,
+            origin=DEFAULT_ORIGIN,
+        )
 
         self._handshake()
         self._subscribe_all()
