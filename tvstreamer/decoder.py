@@ -13,11 +13,12 @@ _re_tick = re.compile(
 
 # Regex for candle frames (TradingView 'du' updates). Captures OHLCV and optional bar_close_time
 _CANDLE_RE = re.compile(
-    r"\"m\":\"du\".*?\"v\":\[(?P<ts>[0-9.]+),(?P<open>[0-9.]+),(?P<high>[0-9.]+),(?P<low>[0-9.]+),(?P<close>[0-9.]+),(?P<vol>[0-9.]+)\](?:.*?\"bar_close_time\":(?P<bct>\d+))?"
+    r"\"m\":\"du\".*?\"n\":\"(?P<sym>[^\"]+)\".*?\"v\":\[(?P<ts>[0-9.]+),(?P<open>[0-9.]+),(?P<high>[0-9.]+),(?P<low>[0-9.]+),(?P<close>[0-9.]+),(?P<vol>[0-9.]+)\](?:.*?\"bar_close_time\":(?P<bct>\d+))?"
 )
 
 
 class CandleFrame(TypedDict, total=False):
+    sym: str
     ts: float
     o: float
     h: float
@@ -53,6 +54,7 @@ def decode_candle_frame(raw: str) -> Optional[CandleFrame]:
         return None
 
     frame: CandleFrame = {
+        "sym": m.group("sym"),
         "ts": float(m.group("ts")),
         "o": float(m.group("open")),
         "h": float(m.group("high")),

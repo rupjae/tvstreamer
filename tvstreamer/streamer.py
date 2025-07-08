@@ -32,6 +32,7 @@ class CandleStream:
     ) -> None:
         self._connect = connect
         self._pairs = list(pairs)
+        self._interval_map = {sym.upper(): interval for sym, interval in self._pairs}
         self._hub = hub or CandleHub()
         self._delay = reconnect_delay
         self._tg: anyio.abc.TaskGroup | None = None
@@ -73,7 +74,10 @@ class CandleStream:
                         frame = decode_candle_frame(raw)
                         if not frame:
                             continue
-                        sym, interval = self._pairs[0]
+                        sym = frame["sym"].upper()
+                        interval = self._interval_map.get(sym)
+                        if interval is None:
+                            continue
                         payload = {
                             "n": sym,
                             "v": [

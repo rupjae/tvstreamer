@@ -32,6 +32,7 @@ except ModuleNotFoundError:  # pragma: no cover - missing optional dep
     Table = None  # type: ignore[assignment]
 
 import tvstreamer
+from . import intervals
 
 # ---------------------------------------------------------------------------
 # Optional import guard – provide helpful error if Typer is absent.
@@ -111,34 +112,6 @@ else:  # Typer import succeeded ------------------------------------------------
             for event in client.stream():
                 print(json.dumps(event, default=str), flush=True)
 
-    def _validate_interval(_: typer.Context, __: typer.CallbackParam, value: str) -> str:
-        """Return interval as TradingView resolution code."""
-
-        from .models import Candle
-
-        try:
-            delta = Candle._interval_to_timedelta(value)
-        except ValueError as exc:  # pragma: no cover - input validation
-            raise typer.BadParameter(str(exc)) from exc
-
-        minutes = int(delta.total_seconds() / 60)
-        mapping = {
-            1: "1",
-            3: "3",
-            5: "5",
-            15: "15",
-            30: "30",
-            60: "60",
-            120: "120",
-            240: "240",
-            1440: "D",
-            10080: "W",
-            43200: "M",
-        }
-        if minutes not in mapping:
-            raise typer.BadParameter(f"Unsupported interval: {value}")
-        return mapping[minutes]
-
     def _symbol_option() -> str:
         return typer.Option(..., "--symbol", "-s", help="TradingView symbol")
 
@@ -148,7 +121,7 @@ else:  # Typer import succeeded ------------------------------------------------
             "--interval",
             "-i",
             help="Bar interval (e.g. 1m, 5, 15, 1h)",
-            callback=_validate_interval,
+            callback=lambda _ctx, _param, val: intervals.validate(val),
         )
 
     # --------------------------------------------------------------------
@@ -170,7 +143,7 @@ else:  # Typer import succeeded ------------------------------------------------
             "--interval",
             help="Resolution code (e.g. 1m, 5, 1h)",
             rich_help_panel="Subscription",
-            callback=_validate_interval,
+            callback=lambda _c, _p, v: intervals.validate(v),
         ),
         init_bars: int = typer.Option(
             0,
@@ -195,7 +168,9 @@ else:  # Typer import succeeded ------------------------------------------------
     def history(
         symbol: str = typer.Argument(..., help="TradingView symbol (exchange:SYMBOL)"),
         interval: str = typer.Argument(
-            ..., help="Resolution code (e.g. 1m, 5, 1h)", callback=_validate_interval
+            ...,
+            help="Resolution code (e.g. 1m, 5, 1h)",
+            callback=lambda _c, _p, v: intervals.validate(v),
         ),
         n_bars: int = typer.Argument(..., help="Number of historical bars to fetch"),
         debug: bool = typer.Option(
