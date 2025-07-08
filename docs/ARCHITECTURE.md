@@ -79,6 +79,7 @@ Future Extensions
 
 * Async wrapper around `TvWSClient` for trio/anyio projects.
 * Pluggable back-pressure handling (ring buffers, bounded queues).
+* `tvws candles` implements live & historic candle helpers.
 * Richer CLI sub-commands (snapshot, export CSV, replay streams).
 
 This document should evolve alongside the code-base.  If you touch more than a

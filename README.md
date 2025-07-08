@@ -184,10 +184,17 @@ anyio.run(main)
 	tvws -s BINANCE:ETHUSDT -s BINANCE:BTCUSDT -i 5 -d
 
 # Fetch historical bars snapshot for a symbol (no live stream)
-	tvws history BINANCE:BTCUSDT 1 100
+        tvws history BINANCE:BTCUSDT 1 100
 
 # Fetch initial history (500 candles) then continue streaming
-	tvws -s NYSE:MSFT -i 1D -n 500 | tee msft.jsonl
+        tvws -s NYSE:MSFT -i 1D -n 500 | tee msft.jsonl
+
+# Stream BTC/USDT 5‑minute candle closes
+        tvws candles live --symbol BINANCE:BTCUSDT --interval 5m
+
+# Fetch last 100 NVDA hourly candles as a table
+        tvws candles hist --symbol NASDAQ:NVDA --interval 1h --limit 100
+        # install 'rich' for coloured table output
 ```
 
 Run `tvws --help` for the full list of options.
