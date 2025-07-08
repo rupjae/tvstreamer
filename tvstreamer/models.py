@@ -8,7 +8,7 @@ from typing import Any, Mapping
 __all__ = ["Candle"]
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Candle:
     """OHLCV bar with open/close timestamps."""
 
