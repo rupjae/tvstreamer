@@ -11,6 +11,7 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
  - Initial changelog scaffold following Keep-a-Changelog guidelines.
  - Continuous integration now caches Poetry by lock hash, runs `pip-audit`,
    and uploads coverage to Codecov.
+ - `Candle` dataclass converting TradingView frames into typed OHLCV bars.
 
 ## [0.1.1] - 2025-07-07
 
