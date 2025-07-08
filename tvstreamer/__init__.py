@@ -47,6 +47,7 @@ from .streaming import StreamRouter
 from .connection import TradingViewConnection
 from .hub import CandleHub
 from .streamer import CandleStream
+from .historic import get_historic_candles
 
 # Public re-exports -----------------------------------------------------------
 
@@ -56,6 +57,7 @@ __all__ = [
     "TradingViewConnection",
     "CandleHub",
     "CandleStream",
+    "get_historic_candles",
     "configure_logging",
     "trace",
 ]
