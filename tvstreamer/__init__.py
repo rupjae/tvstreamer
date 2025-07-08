@@ -46,6 +46,7 @@ from .wsclient import TvWSClient
 from .streaming import StreamRouter
 from .connection import TradingViewConnection
 from .hub import CandleHub
+from .streamer import CandleStream
 
 # Public re-exports -----------------------------------------------------------
 
@@ -54,6 +55,7 @@ __all__ = [
     "StreamRouter",
     "TradingViewConnection",
     "CandleHub",
+    "CandleStream",
     "configure_logging",
     "trace",
 ]
