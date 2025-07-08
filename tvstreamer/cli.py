@@ -33,6 +33,7 @@ except ModuleNotFoundError:  # pragma: no cover - missing optional dep
 
 import tvstreamer
 from . import intervals
+from .json_utils import to_json
 
 # ---------------------------------------------------------------------------
 # Optional import guard – provide helpful error if Typer is absent.
@@ -110,7 +111,7 @@ else:  # Typer import succeeded ------------------------------------------------
 
         with client:
             for event in client.stream():
-                print(json.dumps(event, default=str), flush=True)
+                print(to_json(event), flush=True)
 
     def _symbol_option() -> str:
         return typer.Option(..., "--symbol", "-s", help="TradingView symbol")
@@ -181,7 +182,7 @@ else:  # Typer import succeeded ------------------------------------------------
         # Ensure WebSocket is closed on completion or error
         with tvstreamer.TvWSClient([(symbol, interval)], ws_debug=debug) as client:
             for bar in client.get_history(symbol, interval, n_bars):
-                print(json.dumps(bar, default=str), flush=True)
+                print(to_json(bar), flush=True)
 
     # --------------------------------------------------------------------
     # Candle utilities

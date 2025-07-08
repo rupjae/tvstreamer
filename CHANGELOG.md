@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file following th
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+ - CLI now installs required websockets; candle & socket commands no longer crash.
+ - tvws stream/history emit valid JSON objects instead of stringified dataclasses.
+### Improved
+ - Unsupported interval values raise a concise CLI error (status 2).
 
 ## [0.2.0] - 2025-07-08
 

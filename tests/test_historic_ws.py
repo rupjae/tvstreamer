@@ -11,6 +11,8 @@ import trio
 import anyio
 import logging
 import pytest
+import typer
+import types
 
 import tvstreamer.historic as historic
 from tvstreamer.models import Candle
@@ -89,7 +91,7 @@ def run_fetch(monkeypatch, limit: int, frames: list[str]):
     def connect(*_a, **_kw):
         return DummyConnect(ws)
 
-    monkeypatch.setattr(historic.websockets, "connect", connect)
+    monkeypatch.setattr(historic, "websockets", types.SimpleNamespace(connect=connect))
 
     async def main():
         return await historic.get_historic_candles("SYM", "1", limit, timeout=1)
@@ -141,7 +143,7 @@ def test_timeout(monkeypatch, caplog):
     def connect(*_a, **_kw):
         return DummyConnect(ws)
 
-    monkeypatch.setattr(historic.websockets, "connect", connect)
+    monkeypatch.setattr(historic, "websockets", types.SimpleNamespace(connect=connect))
 
     async def main():
         return await historic.get_historic_candles("SYM", "1", 2, timeout=0.1)
@@ -178,7 +180,7 @@ def test_cache(monkeypatch):
         calls += 1
         return DummyConnect(ws)
 
-    monkeypatch.setattr(historic.websockets, "connect", connect)
+    monkeypatch.setattr(historic, "websockets", types.SimpleNamespace(connect=connect))
     monkeypatch.setattr(historic.time, "monotonic", lambda: 1000)
 
     async def main1():
@@ -215,10 +217,10 @@ def test_bad_interval(monkeypatch):
     def connect(*_a, **_kw):
         return DummyConnect(DummyWS(frames))
 
-    monkeypatch.setattr(historic.websockets, "connect", connect)
+    monkeypatch.setattr(historic, "websockets", types.SimpleNamespace(connect=connect))
 
     async def main():
         await historic.get_historic_candles("SYM", "99", 1)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(typer.BadParameter):
         trio.run(main, clock=MockClock())

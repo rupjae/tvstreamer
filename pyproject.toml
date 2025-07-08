@@ -4,7 +4,7 @@ name = "tvstreamer"
 # is populated at runtime via `importlib.metadata.version()` to avoid keeping
 # multiple copies in sync.
 # Keep semantic version starting at 0.1.x while project is in early development
-version = "0.2.0"
+version = "0.3.1"
 # Stream live & historical market data from TradingView’s undocumented
 # WebSocket API.
 description = "TradingView WebSocket integration & historical data downloader"
@@ -36,9 +36,10 @@ python = ">=3.8,<4.0"
 websocket-client = ">=0.57.0"
 typer = "^0.9.0"
 tomli = { version = "^2.0.1", python = "<3.11" }
+websockets = "^12.0"
 
 [tool.poetry.extras]
-cli = ["typer"]
+cli = ["typer", "websockets"]
 dev = ["pytest", "pytest-timeout", "anyio", "pytest-cov", "coverage"]
 
 [tool.poetry.scripts]

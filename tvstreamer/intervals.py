@@ -4,10 +4,12 @@ from __future__ import annotations
 
 ``validate()`` accepts minute-based strings like ``"5m"`` or ``"15"`` as well as
 hour/day/week aliases (e.g. ``"1h"``, ``"1d"``). Sub-minute resolutions are not
-supported and will raise ``ValueError``.
+supported and will raise ``typer.BadParameter``.
 """
 
 from typing import Set
+
+import typer
 
 __all__ = ["validate", "ALLOWED_INTERVALS"]
 
@@ -43,9 +45,9 @@ def validate(raw: str) -> str:
 
     if cleaned.isdigit():
         if cleaned not in ALLOWED_INTERVALS:
-            raise ValueError(f"Unsupported interval: {raw}")
+            raise typer.BadParameter(f"Unsupported interval: {raw}")
         return cleaned
     cleaned = cleaned.upper()
     if cleaned not in ALLOWED_INTERVALS:
-        raise ValueError(f"Unsupported interval: {raw}")
+        raise typer.BadParameter(f"Unsupported interval: {raw}")
     return cleaned

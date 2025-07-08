@@ -96,6 +96,11 @@ Installation
 pip install tvstreamer
 pip install tvstreamer[cli]
 
+# Candle streaming commands require the optional `websockets` dependency
+# installed via the `[cli]` extra:
+#
+#     pip install tvstreamer[cli]
+
 # From source - editable for local development
 git clone https://example.com/your-fork/tvstreamer.git
 cd tvstreamer
@@ -216,6 +221,9 @@ anyio.run(main)
         tvws candles hist --symbol NASDAQ:NVDA --interval 1h --limit 100
         # install 'rich' for coloured table output
 ```
+
+`tvws stream` and `tvws history` output line-delimited JSON for easy piping into
+scripts or tools like `jq`.
 
 Run `tvws --help` for the full list of options.
 

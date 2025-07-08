@@ -1,5 +1,6 @@
 import json
 import pytest
+import typer
 
 try:
     from anyio.testing import MockClock
@@ -59,5 +60,5 @@ def test_invalid_interval(monkeypatch):
 
     import trio
 
-    with pytest.raises(ValueError):
+    with pytest.raises(typer.BadParameter):
         trio.run(main, clock=MockClock())
