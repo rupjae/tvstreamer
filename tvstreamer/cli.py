@@ -241,7 +241,7 @@ else:  # Typer import succeeded ------------------------------------------------
                         )
             except (KeyboardInterrupt, anyio.get_cancelled_exc_class()):
                 msg = "Stream interrupted"
-                if Console:
+                if Console is not None:
                     Console().print(f"[yellow]{msg}[/]")
                 else:
                     print(msg, file=sys.stderr)
@@ -261,7 +261,7 @@ else:  # Typer import succeeded ------------------------------------------------
 
         candles_data = anyio.run(_fetch)
 
-        if Table and Console:
+        if Table is not None and Console is not None:
             table = Table(title=f"{symbol} {interval}")
             table.add_column("Time")
             table.add_column("Open", justify="right")

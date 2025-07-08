@@ -45,6 +45,26 @@ with TvWSClient(subs, n_init_bars=500) as client:
             handle_bar(event)
 ```
 
+#### Candle utilities
+
+```python
+import anyio
+import websockets
+from tvstreamer import CandleStream, get_historic_candles
+
+async def live() -> None:
+    async with CandleStream(websockets.connect, [("BINANCE:BTCUSDT", "5m")]) as cs:
+        async for c in cs.subscribe():
+            print(c.close)
+
+async def hist() -> None:
+    data = await get_historic_candles("BINANCE:BTCUSDT", "1h", limit=100)
+    print(data[-1].close)
+
+anyio.run(live)
+anyio.run(hist)
+```
+
 ### CLI quick demo
 
 ```bash
