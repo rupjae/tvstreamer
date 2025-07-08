@@ -20,3 +20,4 @@ env/
 
 # Pytest coverage data
 .coverage
+coverage.xml

@@ -1,6 +1,6 @@
 # tvws command-line interface
 
-The `tvws` tool wraps the low level WebSocket client.
+The `tvws` tool wraps the low-level WebSocket client.
 
 ## Global options
 
