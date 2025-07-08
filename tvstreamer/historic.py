@@ -10,26 +10,11 @@ import string
 import time
 
 import anyio
+from typing import Any
 
-try:  # optional heavy dependency
-    import websockets  # type: ignore
-except ModuleNotFoundError:  # pragma: no cover - optional
+from .exceptions import MissingDependencyError
 
-    class _MissingWebsockets:
-        @staticmethod
-        def connect(*_a, **_kw):
-            class _Ctx:
-                async def __aenter__(self):  # pragma: no cover - runtime failure
-                    raise ModuleNotFoundError(
-                        "websockets package is required for get_historic_candles"
-                    )
-
-                async def __aexit__(self, exc_type, exc, tb):
-                    return False
-
-            return _Ctx()
-
-    websockets = _MissingWebsockets()
+websockets: Any = None
 
 from .decoder import decode_candle_frame
 from .models import Candle
@@ -46,6 +31,19 @@ class TooManyRequestsError(RuntimeError):
 _websocket_semaphore = asyncio.Semaphore(3)
 
 _WS_ENDPOINT = "wss://data.tradingview.com/socket.io/websocket"
+
+
+async def _ensure_websockets() -> None:
+    try:
+        global websockets
+        if websockets is None:
+            import websockets as _ws  # type: ignore
+
+            websockets = _ws
+    except ModuleNotFoundError as exc:  # pragma: no cover
+        raise MissingDependencyError(
+            "Command requires the 'websockets' extra.  Try: pip install tvstreamer[cli]"
+        ) from exc
 
 
 def _tv_msg(method: str, params: list) -> str:
@@ -157,6 +155,7 @@ async def get_historic_candles(
     >>> await get_historic_candles("BINANCE:BTCUSDT", "1m", limit=200)
     """
 
+    await _ensure_websockets()
     res = validate(interval)
     sem = _websocket_semaphore
     if sem.locked():

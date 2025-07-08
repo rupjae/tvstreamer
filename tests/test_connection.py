@@ -1,5 +1,6 @@
 import json
 import pytest
+import typer
 
 try:
     from anyio.testing import MockClock
