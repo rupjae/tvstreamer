@@ -81,3 +81,17 @@ def test_candlehub_stress() -> None:
             nursery.cancel_scope.cancel()
 
     trio.run(main, clock=MockClock())
+
+
+def test_candlehub_metrics() -> None:
+    hub = CandleHub(maxsize=1)
+    recv = hub.subscribe()
+
+    async def main() -> None:
+        assert hub.metrics["queue_len"] == 0
+        await hub.publish(_sample_candle(0))
+        assert hub.metrics["queue_len"] == 1
+        await recv.receive()
+        assert hub.metrics["queue_len"] == 0
+
+    trio.run(main, clock=MockClock())

@@ -1,4 +1,10 @@
-"""In-memory pub-sub hubs for Tick and Candle events."""
+"""In-memory pub-sub hubs for Tick and Candle events.
+
+``CandleHub`` and ``TickHub`` provide a lightweight broadcast mechanism using
+``anyio`` memory streams.  Each subscriber gets an independent queue so slow
+consumers do not block fast ones.  ``publish`` is non-blocking and will drop an
+item when a subscriber's queue is full, emitting a TRACE log for observability.
+"""
 
 from __future__ import annotations
 
@@ -7,14 +13,19 @@ from anyio.streams.memory import (
     MemoryObjectReceiveStream,
     MemoryObjectSendStream,
 )
+import logging
 from typing import Generic, Set, TypeVar
 
 from .events import Tick
 from .models import Candle
+from .logging_utils import TRACE_LEVEL
 
 __all__ = ["TickHub", "CandleHub"]
 
 T = TypeVar("T")
+
+
+logger = logging.getLogger(__name__)
 
 
 class _Hub(Generic[T]):
@@ -31,13 +42,20 @@ class _Hub(Generic[T]):
         return recv
 
     async def publish(self, item: T) -> None:
-        """Broadcast *item* to all subscribers, dropping on overflow."""
+        """Broadcast ``item`` to all subscribers.
+
+        The call is non-blocking; if a subscriber backlog is full the item is
+        dropped and a TRACE log records the event.
+        """
         for send in list(self._subs):
             try:
                 send.send_nowait(item)
             except anyio.WouldBlock:
-                # Drop item when subscriber backlog is full
-                pass
+                logger.log(
+                    TRACE_LEVEL,
+                    "drop item: subscriber backlog full",
+                    extra={"code_path": __name__},
+                )
             except Exception:
                 self._subs.discard(send)
                 await send.aclose()
@@ -49,9 +67,10 @@ class _Hub(Generic[T]):
         self._subs.clear()
 
     @property
-    def metrics(self) -> int:
-        """Return total queued items across subscribers."""
-        return sum(s.statistics().current_buffer_used for s in self._subs)
+    def metrics(self) -> dict[str, int]:
+        """Return observability metrics."""
+        qlen = sum(s.statistics().current_buffer_used for s in self._subs)
+        return {"queue_len": qlen}
 
 
 class TickHub(_Hub[Tick]):
@@ -59,4 +78,12 @@ class TickHub(_Hub[Tick]):
 
 
 class CandleHub(_Hub[Candle]):
-    """In-memory hub for :class:`Candle` events."""
+    """In-memory hub for :class:`Candle` events.
+
+    Example
+    -------
+    >>> hub = CandleHub(maxsize=10)
+    >>> recv = hub.subscribe()
+    >>> await hub.publish(candle)
+    >>> await recv.receive()
+    """
