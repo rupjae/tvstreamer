@@ -2,6 +2,7 @@ try:
     import websockets
 except ModuleNotFoundError:
     import pytest
+
     pytest.skip("websockets package required", allow_module_level=True)
 
 import anyio

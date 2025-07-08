@@ -18,6 +18,7 @@ real-time market data from [TradingView]’s *undocumented* WebSocket endpoint.
 - [Installation](#installation)
 - [Usage](#usage)
 - [Logging](#logging)
+- [CLI reference](docs/cli.md)
 - [Development](#development)
 - [Project Architecture](#project-architecture-birds-eye-view)
 - [FAQ](#faq)

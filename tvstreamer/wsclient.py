@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 # Typed events and buffer
 from tvstreamer.events import BaseEvent, Tick, Bar, BarBuffer
-from .constants import DEFAULT_ORIGIN
+import tvstreamer.constants as const
 
 # ---------------------------------------------------------------------------
 # Helper data models
@@ -169,7 +169,7 @@ class TvWSClient:
         self._ws = create_connection(
             self.WS_ENDPOINT,
             timeout=7,
-            origin=DEFAULT_ORIGIN,
+            origin=const.DEFAULT_ORIGIN,
         )
 
         self._handshake()

@@ -33,7 +33,7 @@ except ModuleNotFoundError:  # pragma: no cover - missing optional dep
 
 import tvstreamer
 from . import intervals
-from .constants import DEFAULT_ORIGIN
+import tvstreamer.constants as const
 from .json_utils import to_json
 
 # ---------------------------------------------------------------------------
@@ -88,7 +88,7 @@ else:  # Typer import succeeded ------------------------------------------------
         debug: bool = typer.Option(False, "--debug", help="Enable verbose logging"),
         quiet: bool = typer.Option(False, "--quiet", help="Suppress informational logs"),
         origin: str = typer.Option(
-            DEFAULT_ORIGIN,
+            const.DEFAULT_ORIGIN,
             "--origin",
             help="Origin header for TradingView connections",
         ),
@@ -99,8 +99,6 @@ else:  # Typer import succeeded ------------------------------------------------
         if quiet:
             logging.getLogger().setLevel(logging.WARNING)
         if origin:
-            import tvstreamer.constants as const
-
             const.DEFAULT_ORIGIN = origin
         logging.getLogger(__name__).debug(
             "Origin header set to %s",
@@ -230,11 +228,17 @@ else:  # Typer import succeeded ------------------------------------------------
                 )
                 raise typer.Exit(1) from exc
 
+            import inspect
+
             def _connect():
+                if "origin" in inspect.signature(websockets.connect).parameters:
+                    return websockets.connect(
+                        tvstreamer.wsclient.TvWSClient.WS_ENDPOINT,
+                        origin=const.DEFAULT_ORIGIN,
+                    )
                 return websockets.connect(
                     tvstreamer.wsclient.TvWSClient.WS_ENDPOINT,
-                    origin=DEFAULT_ORIGIN,  # for websockets ≥11
-                    # ↳ falls back to extra_headers if origin kwarg unsupported
+                    extra_headers={"Origin": const.DEFAULT_ORIGIN},
                 )
 
             try:
