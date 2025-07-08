@@ -44,12 +44,14 @@ from .logging_utils import (
 # Public streaming client
 from .wsclient import TvWSClient
 from .streaming import StreamRouter
+from .connection import TradingViewConnection
 
 # Public re-exports -----------------------------------------------------------
 
 __all__ = [
     "TvWSClient",
     "StreamRouter",
+    "TradingViewConnection",
     "configure_logging",
     "trace",
 ]
