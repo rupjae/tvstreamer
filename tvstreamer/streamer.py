@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import anyio
 import logging
-from typing import AsyncIterator, Callable, Iterable, AsyncContextManager
+from typing import AsyncContextManager, AsyncIterator, Callable, Iterable
+import random
 
 from .connection import TradingViewConnection
 from .decoder import decode_candle_frame
 from .hub import CandleHub
 from .models import Candle
+from .settings import RECONNECT_MAX_DELAY
+from .logging_utils import TRACE_LEVEL
 
 __all__ = ["CandleStream"]
 
@@ -29,9 +32,15 @@ class CandleStream:
     ) -> None:
         self._connect = connect
         self._pairs = list(pairs)
-        self.hub = hub or CandleHub()
+        self._hub = hub or CandleHub()
         self._delay = reconnect_delay
         self._tg: anyio.abc.TaskGroup | None = None
+
+    @property
+    def hub(self) -> CandleHub:
+        """Broadcast hub for published candles."""
+
+        return self._hub
 
     async def __aenter__(self) -> "CandleStream":
         self._tg = anyio.create_task_group()
@@ -43,16 +52,23 @@ class CandleStream:
         assert self._tg is not None
         self._tg.cancel_scope.cancel()
         await self._tg.__aexit__(exc_type, exc, tb)
-        await self.hub.aclose()
+        await self._hub.aclose()
 
     async def _run(self) -> None:
         assert self._tg is not None
+        attempt = 0
         while True:
             try:
+                logger.log(
+                    TRACE_LEVEL,
+                    "connect candle stream",
+                    extra={"code_path": f"{__name__}.CandleStream"},
+                )
                 async with self._connect() as ws:
                     conn = TradingViewConnection(sender=ws.send)  # type: ignore[attr-defined]
                     for sym, interval in self._pairs:
                         await conn.subscribe_candles(sym, interval)
+                    attempt = 0
                     async for raw in ws:
                         frame = decode_candle_frame(raw)
                         if not frame:
@@ -73,17 +89,20 @@ class CandleStream:
                         if bct is not None:
                             payload["lbs"] = {"bar_close_time": bct}
                         candle = Candle.from_frame(payload, interval=interval)
-                        await self.hub.publish(candle)
+                        await self._hub.publish(candle)
             except anyio.get_cancelled_exc_class():
                 break
             except Exception:  # pragma: no cover - reconnect branch
+                attempt += 1
                 logger.exception("candle stream error", extra={"code_path": __name__})
-                await anyio.sleep(self._delay)
+                delay = min(self._delay * (2**attempt), RECONNECT_MAX_DELAY)
+                delay *= 0.8 + random.random() * 0.4
+                await anyio.sleep(delay)
 
     def subscribe(self) -> AsyncIterator[Candle]:
         """Return an async iterator of :class:`Candle` events."""
 
-        recv = self.hub.subscribe()
+        recv = self._hub.subscribe()
 
         async def _iterator() -> AsyncIterator[Candle]:
             try:

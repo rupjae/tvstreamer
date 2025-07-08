@@ -48,9 +48,12 @@ def test_candlestream_integration():
 
     hub = CandleHub(maxsize=10)
     out: list[Candle] = []
+    stream_instance: CandleStream | None = None
 
     async def main() -> None:
+        nonlocal stream_instance
         async with CandleStream(connect, [("SYM", "1m")], hub=hub) as stream:
+            stream_instance = stream
             it = stream.subscribe()
             for _ in range(3):
                 out.append(await it.__anext__())
@@ -63,3 +66,4 @@ def test_candlestream_integration():
     assert all(isinstance(c, Candle) for c in out)
     assert out[0].symbol == "SYM"
     assert out[0].ts_open.tzinfo is timezone.utc
+    assert stream_instance is not None and stream_instance.hub is hub
