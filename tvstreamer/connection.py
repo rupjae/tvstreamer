@@ -10,7 +10,8 @@ import json
 import logging
 import secrets
 import string
-from typing import Awaitable, Callable, Set, Tuple
+from collections import defaultdict
+from typing import Awaitable, Callable, DefaultDict, List, Set, Tuple
 
 import anyio
 
@@ -29,7 +30,7 @@ class TradingViewConnection:
         self._tick_subs: Set[str] = set()
         self._quote_symbols: Set[str] = set()
         self._candle_subs: Set[Tuple[str, str]] = set()
-        self._series_ids: dict[Tuple[str, str], str] = {}
+        self._series_ids: DefaultDict[Tuple[str, str], List[str]] = defaultdict(list)
         self._quote_session = self._gen_quote_session()
         self._chart_session = self._gen_chart_session()
         self._started = False
@@ -115,7 +116,7 @@ class TradingViewConnection:
             [self._chart_session, series_id, series_id, alias, res, 1, ""],
         )
         self._candle_subs.add((sym, res))
-        self._series_ids[(sym, res)] = series_id
+        self._series_ids[(sym, res)].append(series_id)
         logging.getLogger(__name__).log(
             TRACE_LEVEL,
             "Subscribed to %s %s-bar [series=%s]",
@@ -131,8 +132,11 @@ class TradingViewConnection:
         for sym in list(self._tick_subs):
             await self._send("quote_remove_symbols", [self._quote_session, sym])
         self._tick_subs.clear()
-        for (sym, res), sid in list(self._series_ids.items()):
-            await self._send("remove_series", [self._chart_session, sid])
+        for (sym, res), sids in list(self._series_ids.items()):
+            for sid in sids:
+                await self._send("remove_series", [self._chart_session, sid])
         self._candle_subs.clear()
         self._series_ids.clear()
         self._quote_symbols.clear()
+        # TODO: optionally send "chart_delete_session" once server support is
+        # confirmed. Closing the socket usually suffices.
