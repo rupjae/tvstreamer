@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
+import random
+import string
 from typing import Awaitable, Callable, Set, Tuple
 
 import anyio
@@ -22,6 +24,8 @@ class TradingViewConnection:
         self._send_hook: SendHook = sender or (lambda _m: anyio.sleep(0))
         self._tick_subs: Set[str] = set()
         self._candle_subs: Set[Tuple[str, str]] = set()
+        self._quote_session = self._gen_quote_session()
+        self._started = False
 
     async def __aenter__(self) -> "TradingViewConnection":
         return self
@@ -30,13 +34,31 @@ class TradingViewConnection:
         await self.aclose()
 
     async def _send(self, method: str, params: list) -> None:
-        msg = json.dumps({"m": method, "p": params}, separators=(",", ":"))
-        await self._send_hook(msg)
+        payload = json.dumps({"m": method, "p": params}, separators=(",", ":"))
+        frame = self._prepend_header(payload)
+        await self._send_hook(frame)
+
+    @staticmethod
+    def _prepend_header(payload: str) -> str:
+        return f"~m~{len(payload)}~m~{payload}"
+
+    @staticmethod
+    def _gen_quote_session() -> str:
+        return "qs_" + "".join(random.choice(string.ascii_lowercase) for _ in range(12))
+
+    async def _ensure_started(self) -> None:
+        if self._started:
+            return
+        await self._send("set_auth_token", ["unauthorized_user_token"])
+        await self._send("quote_create_session", [self._quote_session])
+        await self._send("quote_set_fields", [self._quote_session, "lp", "volume", "ch"])
+        self._started = True
 
     async def subscribe_ticks(self, symbol: str) -> None:
+        await self._ensure_started()
         sym = symbol.upper()
         self._tick_subs.add(sym)
-        await self._send("quote_add_symbols", ["qs", sym])
+        await self._send("quote_add_symbols", [self._quote_session, sym])
         logging.getLogger(__name__).log(
             TRACE_LEVEL,
             "Subscribed to %s ticks",
@@ -51,10 +73,11 @@ class TradingViewConnection:
         Aliases like ``"5m"`` are accepted. Raises ``ValueError`` for unsupported
         resolutions.
         """
+        await self._ensure_started()
         res = validate(interval)
         sym = symbol.upper()
         self._candle_subs.add((sym, res))
-        await self._send("quote_add_series", ["qs", sym, res])
+        await self._send("quote_add_series", [self._quote_session, sym, res])
         logging.getLogger(__name__).log(
             TRACE_LEVEL,
             "Subscribed to %s %s-bar",
@@ -66,9 +89,9 @@ class TradingViewConnection:
     async def aclose(self) -> None:
         if self._tick_subs:
             for sym in list(self._tick_subs):
-                await self._send("quote_remove_symbols", ["qs", sym])
+                await self._send("quote_remove_symbols", [self._quote_session, sym])
             self._tick_subs.clear()
         if self._candle_subs:
             for sym, interval in list(self._candle_subs):
-                await self._send("quote_remove_series", ["qs", sym, interval])
+                await self._send("quote_remove_series", [self._quote_session, sym, interval])
             self._candle_subs.clear()
