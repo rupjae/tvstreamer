@@ -29,6 +29,8 @@ def test_origin_header(monkeypatch):
             client = TvWSClient([])
             await anyio.to_thread.run_sync(client.connect)
             client.close()
+            # allow server handler to execute and record the Origin header
+            await anyio.sleep(0)
 
     anyio.run(main, backend="asyncio")
     assert headers and headers[0] == DEFAULT_ORIGIN
