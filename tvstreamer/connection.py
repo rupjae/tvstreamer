@@ -25,6 +25,7 @@ class TradingViewConnection:
         self._tick_subs: Set[str] = set()
         self._candle_subs: Set[Tuple[str, str]] = set()
         self._quote_session = self._gen_quote_session()
+        self._chart_session = self._gen_chart_session()
         self._started = False
         self._token = token or "unauthorized_user_token"
         self._handshake_lock = anyio.Lock()
@@ -45,6 +46,11 @@ class TradingViewConnection:
         return f"~m~{len(payload.encode())}~m~{payload}"
 
     @staticmethod
+    def _gen_chart_session() -> str:
+        alphabet = string.ascii_lowercase
+        return "cs_" + "".join(secrets.choice(alphabet) for _ in range(12))
+
+    @staticmethod
     def _gen_quote_session() -> str:
         alphabet = string.ascii_lowercase
         return "qs_" + "".join(secrets.choice(alphabet) for _ in range(12))
@@ -54,6 +60,7 @@ class TradingViewConnection:
             if self._started:
                 return
             await self._send("set_auth_token", [self._token])
+            await self._send("chart_create_session", [self._chart_session, ""])
             await self._send("quote_create_session", [self._quote_session])
             await self._send(
                 "quote_set_fields",
@@ -83,8 +90,18 @@ class TradingViewConnection:
         await self._ensure_started()
         res = validate(interval)
         sym = symbol.upper()
+        series_id = f"s{secrets.randbelow(9000) + 1000}"
+        alias = f"{sym}_{series_id}"
+        await self._send("quote_add_symbols", [self._quote_session, sym])
+        await self._send(
+            "resolve_symbol",
+            [self._chart_session, alias, {"symbol": sym, "adjustment": "splits"}],
+        )
+        await self._send(
+            "create_series",
+            [self._chart_session, series_id, series_id, alias, res, 1, ""],
+        )
         self._candle_subs.add((sym, res))
-        await self._send("quote_add_series", [self._quote_session, sym, res])
         logging.getLogger(__name__).log(
             TRACE_LEVEL,
             "Subscribed to %s %s-bar",
@@ -101,6 +118,4 @@ class TradingViewConnection:
                 await self._send("quote_remove_symbols", [self._quote_session, sym])
             self._tick_subs.clear()
         if self._candle_subs:
-            for sym, interval in list(self._candle_subs):
-                await self._send("quote_remove_series", [self._quote_session, sym, interval])
             self._candle_subs.clear()

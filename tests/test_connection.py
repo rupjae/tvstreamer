@@ -28,10 +28,11 @@ async def test_handshake_and_prefix_once() -> None:
         await conn.subscribe_candles("SYM:TEST2", "1")
         quote_session = conn._quote_session  # type: ignore[attr-defined]
 
-    # first three frames constitute the handshake
-    methods = [json.loads(re.split(r"~m~\d+~m~", m)[1])["m"] for m in sent[:3]]
+    # first four frames constitute the handshake
+    methods = [json.loads(re.split(r"~m~\d+~m~", m)[1])["m"] for m in sent[:4]]
     assert methods == [
         "set_auth_token",
+        "chart_create_session",
         "quote_create_session",
         "quote_set_fields",
     ]
@@ -39,9 +40,16 @@ async def test_handshake_and_prefix_once() -> None:
     assert methods.count("set_auth_token") == 1
     # frames are length-prefixed
     assert all(m.startswith("~m~") for m in sent)
-    # subsequent subscription uses generated quote session
-    payload = json.loads(re.split(r"~m~\d+~m~", sent[3])[1])
-    assert payload["m"] in {"quote_add_series", "quote_add_symbols"}
+    # first candle subscription after handshake
+    sub_methods = [
+        json.loads(re.split(r"~m~\d+~m~", m)[1])["m"] for m in sent[4:7]
+    ]
+    assert sub_methods == [
+        "quote_add_symbols",
+        "resolve_symbol",
+        "create_series",
+    ]
+    payload = json.loads(re.split(r"~m~\d+~m~", sent[4])[1])
     assert quote_session in payload["p"]
 
 

@@ -207,7 +207,10 @@ else:  # Typer import succeeded ------------------------------------------------
     # Candle utilities
     # --------------------------------------------------------------------
 
-    candles = typer.Typer(no_args_is_help=True, help="Live and historic candles")
+    candles = typer.Typer(
+        no_args_is_help=True,
+        help="Live and historic candles via TradingView chart sessions",
+    )
     app.add_typer(candles, name="candles")
 
     @candles.command("live", no_args_is_help=True)
@@ -215,7 +218,7 @@ else:  # Typer import succeeded ------------------------------------------------
         symbol: str = _symbol_option(),
         interval: str = _interval_option(),
     ) -> None:
-        """Stream candle updates and print OHLC values."""
+        """Stream candle updates using TradingView chart sessions."""
 
         async def _run() -> None:
             try:
