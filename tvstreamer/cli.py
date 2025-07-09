@@ -33,6 +33,7 @@ except ModuleNotFoundError:  # pragma: no cover - missing optional dep
 
 import tvstreamer
 from . import intervals
+import tvstreamer.constants as const
 from .json_utils import to_json
 
 # ---------------------------------------------------------------------------
@@ -86,12 +87,24 @@ else:  # Typer import succeeded ------------------------------------------------
         ctx: typer.Context,
         debug: bool = typer.Option(False, "--debug", help="Enable verbose logging"),
         quiet: bool = typer.Option(False, "--quiet", help="Suppress informational logs"),
+        origin: str = typer.Option(
+            const.DEFAULT_ORIGIN,
+            "--origin",
+            help="Origin header for TradingView connections",
+        ),
     ) -> None:
         """Configure logging before executing subcommands."""
 
         tvstreamer.configure_logging(debug=debug)
         if quiet:
             logging.getLogger().setLevel(logging.WARNING)
+        if origin:
+            const.DEFAULT_ORIGIN = origin
+        logging.getLogger(__name__).debug(
+            "Origin header set to %s",
+            origin,
+            extra={"code_path": __file__},
+        )
 
     # --------------------------------------------------------------------
     # Shared helper driving the streaming loop
@@ -215,8 +228,18 @@ else:  # Typer import succeeded ------------------------------------------------
                 )
                 raise typer.Exit(1) from exc
 
+            import inspect
+
             def _connect():
-                return websockets.connect(tvstreamer.wsclient.TvWSClient.WS_ENDPOINT)
+                if "origin" in inspect.signature(websockets.connect).parameters:
+                    return websockets.connect(
+                        tvstreamer.wsclient.TvWSClient.WS_ENDPOINT,
+                        origin=const.DEFAULT_ORIGIN,
+                    )
+                return websockets.connect(
+                    tvstreamer.wsclient.TvWSClient.WS_ENDPOINT,
+                    extra_headers={"Origin": const.DEFAULT_ORIGIN},
+                )
 
             try:
                 async with tvstreamer.CandleStream(_connect, [(symbol, interval)]) as cs:

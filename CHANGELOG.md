@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file following th
 
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2025-07-08
+### Fixed
+- `Origin` header now sent on all TradingView WebSocket handshakes.
+- CLI exposes `--origin` for custom values.
+
 ## [0.3.1] - 2025-07-08
 ### Fixed
 - CLI now installs required websockets; candle & socket commands no longer crash.
