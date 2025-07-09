@@ -51,6 +51,8 @@ async def test_handshake_and_prefix_once() -> None:
     ]
     payload = json.loads(re.split(r"~m~\d+~m~", sent[4])[1])
     assert quote_session in payload["p"]
+    # ensure obsolete method is absent
+    assert not any("quote_add_series" in m for m in sent)
 
 
 @pytest.mark.anyio

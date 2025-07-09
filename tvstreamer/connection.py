@@ -1,4 +1,8 @@
-"""Async TradingView connection handling tick and candle subscriptions."""
+"""Async TradingView connection handling tick and candle subscriptions.
+
+This async client sends TradingView WebSocket frames for tick and candle
+series.  It mirrors the synchronous client but runs on anyio.
+"""
 
 from __future__ import annotations
 
@@ -23,7 +27,9 @@ class TradingViewConnection:
     def __init__(self, sender: SendHook | None = None, token: str | None = None) -> None:
         self._send_hook: SendHook = sender or (lambda _m: anyio.sleep(0))
         self._tick_subs: Set[str] = set()
+        self._quote_symbols: Set[str] = set()
         self._candle_subs: Set[Tuple[str, str]] = set()
+        self._series_ids: dict[Tuple[str, str], str] = {}
         self._quote_session = self._gen_quote_session()
         self._chart_session = self._gen_chart_session()
         self._started = False
@@ -46,14 +52,17 @@ class TradingViewConnection:
         return f"~m~{len(payload.encode())}~m~{payload}"
 
     @staticmethod
-    def _gen_chart_session() -> str:
+    def _gen_session(prefix: str) -> str:
         alphabet = string.ascii_lowercase
-        return "cs_" + "".join(secrets.choice(alphabet) for _ in range(12))
+        return prefix + "_" + "".join(secrets.choice(alphabet) for _ in range(12))
 
-    @staticmethod
-    def _gen_quote_session() -> str:
-        alphabet = string.ascii_lowercase
-        return "qs_" + "".join(secrets.choice(alphabet) for _ in range(12))
+    @classmethod
+    def _gen_chart_session(cls) -> str:
+        return cls._gen_session("cs")
+
+    @classmethod
+    def _gen_quote_session(cls) -> str:
+        return cls._gen_session("qs")
 
     async def _ensure_started(self) -> None:
         async with self._handshake_lock:
@@ -72,7 +81,9 @@ class TradingViewConnection:
         await self._ensure_started()
         sym = symbol.upper()
         self._tick_subs.add(sym)
-        await self._send("quote_add_symbols", [self._quote_session, sym])
+        if sym not in self._quote_symbols:
+            await self._send("quote_add_symbols", [self._quote_session, sym])
+            self._quote_symbols.add(sym)
         logging.getLogger(__name__).log(
             TRACE_LEVEL,
             "Subscribed to %s ticks",
@@ -92,7 +103,9 @@ class TradingViewConnection:
         sym = symbol.upper()
         series_id = f"s{secrets.randbelow(9000) + 1000}"
         alias = f"{sym}_{series_id}"
-        await self._send("quote_add_symbols", [self._quote_session, sym])
+        if sym not in self._quote_symbols:
+            await self._send("quote_add_symbols", [self._quote_session, sym])
+            self._quote_symbols.add(sym)
         await self._send(
             "resolve_symbol",
             [self._chart_session, alias, {"symbol": sym, "adjustment": "splits"}],
@@ -102,20 +115,24 @@ class TradingViewConnection:
             [self._chart_session, series_id, series_id, alias, res, 1, ""],
         )
         self._candle_subs.add((sym, res))
+        self._series_ids[(sym, res)] = series_id
         logging.getLogger(__name__).log(
             TRACE_LEVEL,
-            "Subscribed to %s %s-bar",
+            "Subscribed to %s %s-bar [series=%s]",
             symbol,
             res,
+            series_id,
             extra={"code_path": __name__},
         )
 
     async def aclose(self) -> None:
         if not self._started:
             return
-        if self._tick_subs:
-            for sym in list(self._tick_subs):
-                await self._send("quote_remove_symbols", [self._quote_session, sym])
-            self._tick_subs.clear()
-        if self._candle_subs:
-            self._candle_subs.clear()
+        for sym in list(self._tick_subs):
+            await self._send("quote_remove_symbols", [self._quote_session, sym])
+        self._tick_subs.clear()
+        for (sym, res), sid in list(self._series_ids.items()):
+            await self._send("remove_series", [self._chart_session, sid])
+        self._candle_subs.clear()
+        self._series_ids.clear()
+        self._quote_symbols.clear()

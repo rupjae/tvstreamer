@@ -66,7 +66,7 @@ async def hist() -> None:
 anyio.run(live)
 anyio.run(hist)
 ```
-Under the hood the async helper negotiates a chart session and creates
+Under the hood, async helper negotiates a chart session and creates
 series subscriptions automatically.
 
 ### CLI quick demo

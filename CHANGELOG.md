@@ -6,12 +6,11 @@ All notable changes to this project will be documented in this file following th
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Fixed
-- `tvws candles live` no longer disconnects with `critical_error: quote_add_series` after TradingView protocol change (July 2025).
 
 ## [0.3.3] - 2025-07-09
 ### Fixed
 - TradingView handshake and framing corrected for candle streams.
+- `tvws candles live` no longer disconnects with `critical_error: quote_add_series` after TradingView protocol change (July 2025).
 
 ## [0.3.2] - 2025-07-08
 ### Fixed
