@@ -41,9 +41,7 @@ async def test_handshake_and_prefix_once() -> None:
     # frames are length-prefixed
     assert all(m.startswith("~m~") for m in sent)
     # first candle subscription after handshake
-    sub_methods = [
-        json.loads(re.split(r"~m~\d+~m~", m)[1])["m"] for m in sent[4:7]
-    ]
+    sub_methods = [json.loads(re.split(r"~m~\d+~m~", m)[1])["m"] for m in sent[4:7]]
     assert sub_methods == [
         "quote_add_symbols",
         "resolve_symbol",
