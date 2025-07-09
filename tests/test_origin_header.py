@@ -1,33 +1,38 @@
-import asyncio
-import anyio
-import pytest
-import websockets
+"""Test that TvWSClient.connect uses the DEFAULT_ORIGIN header."""
 
-from tvstreamer.wsclient import TvWSClient
+from typing import Dict, Optional
+
+from tvstreamer.wsclient import create_connection, TvWSClient
 from tvstreamer.constants import DEFAULT_ORIGIN
 
 
 def test_origin_header(monkeypatch):
-    """Ensure that TvWSClient.connect sends the DEFAULT_ORIGIN header."""
-    headers: list[str] = []
+    # Intercept create_connection to capture the origin argument
+    captured: Dict[str, Optional[str]] = {}
 
-    async def main():
-        # synchronization event for server handler
-        ev = asyncio.Event()
+    def fake_create_connection(endpoint: str, timeout: int = 7, origin: Optional[str] = None):
+        captured["origin"] = origin
 
-        async def _handler(ws):
-            headers.append(ws.request_headers.get("Origin"))
-            ev.set()
-            await ws.close()
+        class DummyWS:
+            def send(self, *args, **kwargs):
+                pass
 
-        async with websockets.serve(_handler, "127.0.0.1", 0) as server:
-            port = server.sockets[0].getsockname()[1]
-            monkeypatch.setattr(TvWSClient, "WS_ENDPOINT", f"ws://127.0.0.1:{port}")
-            client = TvWSClient([])
-            await anyio.to_thread.run_sync(client.connect)
-            client.close()
-            # await handler to record the Origin header
-            await asyncio.wait_for(ev.wait(), timeout=1)
+            def close(self):
+                pass
 
-    anyio.run(main, backend="asyncio")
-    assert headers and headers[0] == DEFAULT_ORIGIN
+        return DummyWS()
+
+    # Patch the wsclient.create_connection function to our fake implementation
+    monkeypatch.setattr(
+        "tvstreamer.wsclient.create_connection",
+        fake_create_connection,
+    )
+    # Skip handshake/subscriptions to avoid network operations
+    monkeypatch.setattr(TvWSClient, "_handshake", lambda self: None)
+    monkeypatch.setattr(TvWSClient, "_subscribe_all", lambda self: None)
+
+    client = TvWSClient([])
+    client.connect()
+    client.close()
+
+    assert captured.get("origin") == DEFAULT_ORIGIN
