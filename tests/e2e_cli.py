@@ -35,7 +35,7 @@ async def test_candles_live_smoke(tmp_path) -> None:
     if process.returncode is None:
         process.terminate()
         await process.wait()
-    stdout = (await process.stdout.receive()).decode()
     stderr = (await process.stderr.receive()).decode()
+    stdout = (await process.stdout.receive()).decode()
     assert "protocol_error" not in stderr
     assert "|" in stdout

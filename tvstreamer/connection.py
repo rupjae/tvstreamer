@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-import random
+import secrets
 import string
 from typing import Awaitable, Callable, Set, Tuple
 
@@ -20,12 +20,14 @@ SendHook = Callable[[str], Awaitable[None]]
 class TradingViewConnection:
     """Minimal async wrapper sending TradingView protocol messages."""
 
-    def __init__(self, sender: SendHook | None = None) -> None:
+    def __init__(self, sender: SendHook | None = None, token: str | None = None) -> None:
         self._send_hook: SendHook = sender or (lambda _m: anyio.sleep(0))
         self._tick_subs: Set[str] = set()
         self._candle_subs: Set[Tuple[str, str]] = set()
         self._quote_session = self._gen_quote_session()
         self._started = False
+        self._token = token or "unauthorized_user_token"
+        self._handshake_lock = anyio.Lock()
 
     async def __aenter__(self) -> "TradingViewConnection":
         return self
@@ -40,19 +42,24 @@ class TradingViewConnection:
 
     @staticmethod
     def _prepend_header(payload: str) -> str:
-        return f"~m~{len(payload)}~m~{payload}"
+        return f"~m~{len(payload.encode())}~m~{payload}"
 
     @staticmethod
     def _gen_quote_session() -> str:
-        return "qs_" + "".join(random.choice(string.ascii_lowercase) for _ in range(12))
+        alphabet = string.ascii_lowercase
+        return "qs_" + "".join(secrets.choice(alphabet) for _ in range(12))
 
     async def _ensure_started(self) -> None:
-        if self._started:
-            return
-        await self._send("set_auth_token", ["unauthorized_user_token"])
-        await self._send("quote_create_session", [self._quote_session])
-        await self._send("quote_set_fields", [self._quote_session, "lp", "volume", "ch"])
-        self._started = True
+        async with self._handshake_lock:
+            if self._started:
+                return
+            await self._send("set_auth_token", [self._token])
+            await self._send("quote_create_session", [self._quote_session])
+            await self._send(
+                "quote_set_fields",
+                [self._quote_session, "lp", "volume", "ch"],
+            )
+            self._started = True
 
     async def subscribe_ticks(self, symbol: str) -> None:
         await self._ensure_started()
@@ -63,7 +70,7 @@ class TradingViewConnection:
             TRACE_LEVEL,
             "Subscribed to %s ticks",
             symbol,
-            extra={"code_path": __file__},
+            extra={"code_path": __name__},
         )
 
     async def subscribe_candles(self, symbol: str, interval: str = "1") -> None:
@@ -83,10 +90,12 @@ class TradingViewConnection:
             "Subscribed to %s %s-bar",
             symbol,
             res,
-            extra={"code_path": __file__},
+            extra={"code_path": __name__},
         )
 
     async def aclose(self) -> None:
+        if not self._started:
+            return
         if self._tick_subs:
             for sym in list(self._tick_subs):
                 await self._send("quote_remove_symbols", [self._quote_session, sym])

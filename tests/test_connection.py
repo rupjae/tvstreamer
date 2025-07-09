@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import re
 
+import anyio
+
 import pytest
 
 try:
@@ -51,3 +53,18 @@ async def test_invalid_interval() -> None:
     async with TradingViewConnection(sender=fake_send) as conn:
         with pytest.raises(ValueError):
             await conn.subscribe_candles("SYM:TEST", "2")
+
+
+@pytest.mark.anyio
+async def test_concurrent_subscribe_race() -> None:
+    sent: list[str] = []
+
+    async def fake_send(msg: str) -> None:
+        sent.append(msg)
+
+    async with TradingViewConnection(sender=fake_send) as conn:
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(conn.subscribe_ticks, "SYM:A")
+            tg.start_soon(conn.subscribe_candles, "SYM:A", "1")
+    methods = [json.loads(re.split(r"~m~\d+~m~", m)[1])["m"] for m in sent]
+    assert methods.count("set_auth_token") == 1
