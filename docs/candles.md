@@ -3,6 +3,9 @@
 The library offers high-level helpers around candle data so you don't
 have to decode TradingView frames yourself.
 
+`CandleStream` now establishes a chart session internally, as TradingView
+removed the old `quote_add_series` method in July 2025.
+
 ## API overview
 
 - `CandleHub` – lightweight pub/sub queue for forwarding events to many
