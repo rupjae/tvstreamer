@@ -41,7 +41,6 @@ binarycookie = ">=0.0.1"
 
 [tool.poetry.extras]
 cli = ["typer", "websockets"]
-dev = ["pytest", "pytest-timeout", "anyio", "pytest-cov", "coverage"]
 
 [tool.poetry.scripts]
 tvws = "tvstreamer.cli:app"
@@ -52,10 +51,7 @@ pytest-timeout = "^2.4.0"
 anyio = "^4.0.0"
 pytest-cov = "*"
 coverage = "*"
-
-[tool.poetry.group.dev.dependencies.trio]
-version = "^0.30.0"
-python = ">=3.9"
+trio = { version = "^0.30.0", python = ">=3.9" }
 
 # -------------------------------------------------------------------
 # Development tooling – formatting, linting, type-checking

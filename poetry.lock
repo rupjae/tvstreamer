@@ -45,6 +45,17 @@ tests = ["cloudpickle ; platform_python_implementation == \"CPython\"", "hypothe
 tests-mypy = ["mypy (>=1.11.1) ; platform_python_implementation == \"CPython\" and python_version >= \"3.10\"", "pytest-mypy-plugins ; platform_python_implementation == \"CPython\" and python_version >= \"3.10\""]
 
 [[package]]
+name = "binarycookie"
+version = "0.0.1"
+description = "A Python module that allows reading macOS/iOS binarycookie files."
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "binarycookie-0.0.1.tar.gz", hash = "sha256:8c4ab2a6f99fc1862650d5ad5f9c602cc997065ccb8380a1da91d03c5f88a08d"},
+]
+
+[[package]]
 name = "black"
 version = "24.8.0"
 description = "The uncompromising code formatter."
@@ -804,11 +815,9 @@ files = [
 ]
 
 [extras]
-auth = ["binarycookie"]
 cli = ["typer", "websockets"]
-dev = []
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.8,<4.0"
-content-hash = "073872600aec96ae4b52ea43aafa0bcea2cbb53165a1538979ac39ff72507646"
+content-hash = "36e76a0019dedf89f1da6e5b58a02ed741d76ca9e3303db80f1a9178a9871d7b"
