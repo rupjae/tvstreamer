@@ -2,7 +2,18 @@
 # Streams 1‑minute candles for BINANCE:BTCUSDT from TradingView.
 # Standard‑library only: socket, ssl, json, struct, base64.
 
-import os, ssl, socket, base64, hashlib, json, random, string, struct, re, threading, time
+import os
+import ssl
+import socket
+import base64
+import hashlib
+import json
+import random
+import string
+import struct
+import re
+import threading
+import time
 
 from pathlib import Path
 from binarycookie import parse
@@ -178,14 +189,14 @@ def tv_wrap(cmd: str, params):
 
 
 # ── Pretty‑print helper ─────────────────────────────────────────────────────────
-def _print_bar(label, ts, o, h, l, c_, v_):
+def _print_bar(label, ts, o, h, low, c_, v_):
     """
     Print a candle with a prefix label so closed vs live bars stand out.
     """
     print(
         f"{label:<6} "
         f"{time.strftime('%Y-%m-%d %H:%M', time.gmtime(ts))} "
-        f"O:{o} H:{h} L:{l} C:{c_} V:{v_}"
+        f"O:{o} H:{h} L:{low} C:{c_} V:{v_}"
     )
 
 
@@ -225,7 +236,7 @@ def heartbeat_loop(sock):
 
             candles = evt["p"][1]["sds_1"]["s"]
             for c in candles:
-                ts, o, h, l, cl, v = c["v"]
+                ts, o, h, low, cl, v = c["v"]
 
                 # First bar seen
                 if active_ts is None:
@@ -237,9 +248,9 @@ def heartbeat_loop(sock):
                     active_ts = ts  # roll forward
 
                 # Print LIVE update and cache it
-                _print_bar("LIVE", ts, o, h, l, cl, v)
+                _print_bar("LIVE", ts, o, h, low, cl, v)
 
-                cached_bar = (ts, o, h, l, cl, v)
+                cached_bar = (ts, o, h, low, cl, v)
 
 
 def main():
