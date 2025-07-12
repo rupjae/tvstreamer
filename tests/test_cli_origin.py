@@ -1,14 +1,10 @@
 from typer.testing import CliRunner
 import tvstreamer
 from tvstreamer.cli import app
-from tvstreamer import constants as const
 
 
 def test_cli_origin_option(monkeypatch):
     captured = {}
-
-    # Ensure DEFAULT_ORIGIN reset after test
-    monkeypatch.setattr(const, "DEFAULT_ORIGIN", const.DEFAULT_ORIGIN)
 
     def fake_create_connection(url, timeout=7, origin=None, header=None):
         captured["origin"] = origin
