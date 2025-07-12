@@ -35,12 +35,9 @@ python = ">=3.8,<4.0"
 # External runtime dependencies – streaming-only client keeps the list lean.
 websocket-client = ">=0.57.0"
 typer = "^0.9.0"
-[tool.poetry.dependencies.tomli]
-version = "^2.0.1"
-markers = "python_version < '3.11'"
-[tool.poetry.dependencies.websockets]
-version = "^12.0"
-optional = true
+[tool.poetry.dependencies]
+tomli = { version = "^2.0.1", python = "<3.11" }
+websockets = { version = "^12.0", optional = true }
 binarycookie = ">=0.0.1"
 
 [tool.poetry.extras]
