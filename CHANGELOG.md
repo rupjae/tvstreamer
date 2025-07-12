@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file following th
 The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Safari cookie-based auth support for `TvWSClient`.
 
 ## [0.3.3] - 2025-07-09
 ### Fixed

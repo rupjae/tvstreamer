@@ -49,7 +49,6 @@ def test_handshake_sends_expected_messages() -> None:
     client._handshake()
     methods = [json.loads(m.split("~m~", 2)[2])["m"] for m in sent]
     assert methods == [
-        "set_auth_token",
         "chart_create_session",
         "quote_create_session",
         "quote_set_fields",
