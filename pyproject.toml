@@ -35,8 +35,12 @@ python = ">=3.8,<4.0"
 # External runtime dependencies – streaming-only client keeps the list lean.
 websocket-client = ">=0.57.0"
 typer = "^0.9.0"
-tomli = { version = "^2.0.1", python = "<3.11" }
-websockets = { version = "^12.0", optional = true }
+[tool.poetry.dependencies.tomli]
+version = "^2.0.1"
+markers = "python_version < '3.11'"
+[tool.poetry.dependencies.websockets]
+version = "^12.0"
+optional = true
 binarycookie = ">=0.0.1"
 
 [tool.poetry.extras]
@@ -50,7 +54,9 @@ tvws = "tvstreamer.cli:app"
 pytest = "*"
 pytest-timeout = "^2.4.0"
 anyio = "^4.0.0"
-trio = { version = "^0.30.0", python = ">=3.9" }
+[tool.poetry.group.dev.dependencies.trio]
+version = "^0.30.0"
+python = ">=3.9"
 pytest-cov = "*"
 coverage = "*"
 
@@ -73,6 +79,10 @@ build-backend = "poetry.core.masonry.api"
 [tool.black]
 line-length = 100
 target-version = ["py311", "py312", "py313"]
+# Exclude self (pyproject.toml) to avoid TOML parser errors on dependency tables
+exclude = '''
+/pyproject\.toml$
+'''
 
 # -------------------------------------------------------------------
 # Tool configuration – Ruff
