@@ -17,7 +17,7 @@ except ModuleNotFoundError:  # pragma: no cover - runtime check
 from .exceptions import MissingDependencyError
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class AuthCookies:
     """Container for TradingView session cookies."""
 

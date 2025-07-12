@@ -16,7 +16,11 @@ import threading
 import time
 
 from pathlib import Path
-from binarycookie import parse
+
+try:
+    from binarycookie import parse
+except ModuleNotFoundError:  # pragma: no cover - optional demo dependency
+    parse = None  # type: ignore[assignment]
 
 HOST = "prodata.tradingview.com"
 PORT = 443
@@ -58,6 +62,9 @@ def _get_safari_cookies():
         "~/Library/Containers/com.apple.Safari/Data/Library/Cookies/Cookies.binarycookies"
     ).expanduser()
     if not cookie_path.exists():
+        return sid, atok
+
+    if parse is None:
         return sid, atok
 
     try:
