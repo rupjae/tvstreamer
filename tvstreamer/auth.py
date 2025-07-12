@@ -9,7 +9,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from binarycookie import parse
+try:  # Optional dependency – available when installed with the "auth" extra
+    from binarycookie import parse
+except ModuleNotFoundError:  # pragma: no cover - runtime check
+    parse = None  # type: ignore[assignment]
+
+from .exceptions import MissingDependencyError
 
 
 @dataclass(slots=True, frozen=True)
@@ -33,7 +38,11 @@ def _convert_expiry(raw: object) -> Optional[datetime]:
     if isinstance(raw, (int, float)):
         return datetime.fromtimestamp(raw, tz=timezone.utc)
     if isinstance(raw, str):
-        for fmt in ("%a, %d %b %Y %H:%M:%S %Z", "%a, %d %b %Y"):
+        for fmt in (
+            "%a, %d %b %Y %H:%M:%S %Z",
+            "%a, %d %b %Y",
+            "%Y-%m-%d %H:%M:%S %z",
+        ):
             try:
                 return datetime.strptime(raw.strip(), fmt).replace(tzinfo=timezone.utc)
             except ValueError:
@@ -43,6 +52,9 @@ def _convert_expiry(raw: object) -> Optional[datetime]:
 
 def get_safari_cookies() -> AuthCookies:
     """Return cookies extracted from Safari's binary storage."""
+
+    if parse is None:
+        raise MissingDependencyError("Install the 'auth' extra to enable Safari cookie parsing")
 
     cookie_path = Path(
         "~/Library/Containers/com.apple.Safari/Data/Library/Cookies/Cookies.binarycookies"

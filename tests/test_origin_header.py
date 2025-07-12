@@ -4,13 +4,18 @@ from typing import Dict, Optional
 
 from tvstreamer.wsclient import create_connection, TvWSClient
 from tvstreamer.constants import DEFAULT_ORIGIN
+import tvstreamer.constants as const
 
 
 def test_origin_header(monkeypatch):
     # Intercept create_connection to capture the origin argument
     captured: Dict[str, Optional[str]] = {}
 
-    def fake_create_connection(endpoint: str, timeout: int = 7, origin: Optional[str] = None):
+    monkeypatch.setattr(const, "DEFAULT_ORIGIN", const.DEFAULT_ORIGIN)
+
+    def fake_create_connection(
+        endpoint: str, timeout: int = 7, origin: Optional[str] = None, header=None
+    ):
         captured["origin"] = origin
 
         class DummyWS:

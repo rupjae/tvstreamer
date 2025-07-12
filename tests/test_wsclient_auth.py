@@ -1,5 +1,14 @@
 import json
+import os
+import sys
 from typing import cast
+
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    sys.platform != "darwin" and not (os.getenv("TV_SESSIONID") and os.getenv("TV_AUTH_TOKEN")),
+    reason="requires macOS or TradingView cookies via env vars",
+)
 
 from tvstreamer.wsclient import TvWSClient
 from tvstreamer.auth import AuthCookies

@@ -184,19 +184,12 @@ class TvWSClient:
         if self._auth.sessionid:
             headers.append(f"Cookie: sessionid={self._auth.sessionid}")
 
-        if headers:
-            self._ws = create_connection(
-                self.WS_ENDPOINT,
-                timeout=7,
-                origin=const.DEFAULT_ORIGIN,
-                header=headers,
-            )
-        else:
-            self._ws = create_connection(
-                self.WS_ENDPOINT,
-                timeout=7,
-                origin=const.DEFAULT_ORIGIN,
-            )
+        self._ws = create_connection(
+            self.WS_ENDPOINT,
+            timeout=7,
+            origin=const.DEFAULT_ORIGIN,
+            header=headers or None,
+        )
 
         self._handshake()
         if self._auth.is_authenticated:
@@ -289,9 +282,8 @@ class TvWSClient:
 
     def _handshake(self) -> None:
         """Perform the initial authentication / session negotiation."""
-        token = self._auth.auth_token or self._token
         if self._auth.auth_token:
-            self._send("set_auth_token", [token])
+            self._send("set_auth_token", [self._auth.auth_token])
         self._send("chart_create_session", [self._chart_session])
         self._send("quote_create_session", [self._quote_session])
         self._send("quote_set_fields", [self._quote_session, "lp", "volume", "ch"])

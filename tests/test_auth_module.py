@@ -1,8 +1,14 @@
-import json
 from datetime import datetime
 from pathlib import Path
+import os
+import sys
 
 import pytest
+
+pytestmark = pytest.mark.skipif(
+    sys.platform != "darwin" and not (os.getenv("TV_SESSIONID") and os.getenv("TV_AUTH_TOKEN")),
+    reason="requires macOS or TradingView cookies via env vars",
+)
 
 import tvstreamer.auth as auth
 
@@ -46,6 +52,7 @@ def test_discover_tv_cookies_env(monkeypatch) -> None:
     assert res.sessionid == "SID"
     assert res.auth_token == "T"
     assert res.is_authenticated
+
 
 def test_get_safari_cookies_parse_error(monkeypatch, tmp_path) -> None:
     cookie_file = tmp_path / "Cookies.binarycookies"

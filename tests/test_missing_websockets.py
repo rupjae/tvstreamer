@@ -9,10 +9,10 @@ def test_missing_websockets(monkeypatch):
     import tvstreamer.historic as hist
 
     monkeypatch.setattr(hist, "websockets", None)
-    res = CliRunner(mix_stderr=False).invoke(
+    res = CliRunner().invoke(
         app,
         ["candles", "hist", "--symbol", "SYM", "--interval", "1m", "--limit", "1"],
     )
     assert res.exit_code == 1
-    assert "pip install tvstreamer[cli]" in res.stderr
-    assert "Traceback" not in res.stderr
+    assert "pip install tvstreamer[cli]" in res.output
+    assert "Traceback" not in res.output
