@@ -44,6 +44,7 @@ logger = logging.getLogger(__name__)
 # Typed events and buffer
 from tvstreamer.events import BaseEvent, Tick, Bar, BarBuffer
 import tvstreamer.constants as const
+from .auth import AuthCookies, discover_tv_cookies
 
 # ---------------------------------------------------------------------------
 # Helper data models
@@ -105,6 +106,8 @@ class TvWSClient:
         *,
         n_init_bars: int | None = None,
         token: str = "unauthorized_user_token",
+        auth: "AuthCookies | None" = None,
+        auto_auth: bool = True,
         ws_debug: bool = False,
     ) -> None:
         """Create a new websocket client instance.
@@ -119,6 +122,12 @@ class TvWSClient:
             token: Authentication token extracted from the TradingView website.
                 For anonymous users the hard-coded ``"unauthorized_user_token"``
                 works fine.
+            auth: Authentication cookies for TradingView. When ``None`` and
+                ``auto_auth`` is ``True`` the client attempts to discover
+                cookies automatically.
+            auto_auth: When ``True`` (default) and *auth* is ``None``,
+                :func:`discover_tv_cookies` is invoked to locate browser
+                cookies on the host system.
             ws_debug: When *True*, raw websocket frames are echoed both to
                 ``stdout`` **and** the structured log, which is helpful when
                 reverse-engineering protocol changes.
@@ -129,6 +138,12 @@ class TvWSClient:
             n_init_bars = 300
         self._n_init_bars = n_init_bars
 
+        if auth is None and auto_auth:
+            auth = discover_tv_cookies()
+        if auth is None:
+            auth = AuthCookies(None, None, None)
+        self._auth = auth
+        # TODO: remove token parameter in a future version; currently unused
         self._token = token
         self._ws: WebSocket | None = None
         self._ws_debug = ws_debug
@@ -166,13 +181,20 @@ class TvWSClient:
             "Opening TradingView websocket…",
             extra={"code_path": __file__},
         )
+        headers: list[str] = []
+        if self._auth.sessionid:
+            headers.append(f"Cookie: sessionid={self._auth.sessionid}")
+
         self._ws = create_connection(
             self.WS_ENDPOINT,
             timeout=7,
             origin=const.DEFAULT_ORIGIN,
+            header=headers or None,
         )
 
         self._handshake()
+        if self._auth.is_authenticated:
+            logger.info("Authenticated session", extra={"code_path": __file__})
         self._subscribe_all()
 
         self._rx_thread = threading.Thread(
@@ -261,8 +283,8 @@ class TvWSClient:
 
     def _handshake(self) -> None:
         """Perform the initial authentication / session negotiation."""
-
-        self._send("set_auth_token", [self._token])
+        if self._auth.auth_token:
+            self._send("set_auth_token", [self._auth.auth_token])
         self._send("chart_create_session", [self._chart_session])
         self._send("quote_create_session", [self._quote_session])
         self._send("quote_set_fields", [self._quote_session, "lp", "volume", "ch"])

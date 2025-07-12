@@ -6,7 +6,7 @@ from tvstreamer.cli import app
 def test_cli_origin_option(monkeypatch):
     captured = {}
 
-    def fake_create_connection(url, timeout=7, origin=None):
+    def fake_create_connection(url, timeout=7, origin=None, header=None):
         captured["origin"] = origin
 
         class DummyWS:
