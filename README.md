@@ -47,6 +47,17 @@ with TvWSClient(subs, n_init_bars=500) as client:
             handle_bar(event)
 ```
 
+#### Authenticated mode (optional)
+
+```python
+from tvstreamer import TvWSClient
+from tvstreamer.auth import discover_tv_cookies
+
+auth = discover_tv_cookies()
+with TvWSClient(subs, auth=auth) as client:
+    ...
+```
+
 #### Candle utilities
 
 ```python
