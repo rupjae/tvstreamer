@@ -143,6 +143,7 @@ class TvWSClient:
         if auth is None:
             auth = AuthCookies(None, None, None)
         self._auth = auth
+        # TODO: remove token parameter in a future version; currently unused
         self._token = token
         self._ws: WebSocket | None = None
         self._ws_debug = ws_debug
