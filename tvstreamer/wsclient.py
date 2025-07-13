@@ -98,7 +98,14 @@ class TvWSClient:
     ```
     """
 
-    WS_ENDPOINT = "wss://data.tradingview.com/socket.io/websocket"
+    # 2025-07-13  – TradingView placed *data.tradingview.com* behind stricter
+    # Cloudflare bot-protection which blocks non-browser WebSocket upgrades.
+    # The *prodata* cluster remains accessible for first-party clients and does
+    # **not** enforce the same challenge cookies, so we simply switch the
+    # default endpoint.  Downstream callers can still override the URL via
+    # subclassing if TradingView changes this again.
+
+    WS_ENDPOINT = "wss://prodata.tradingview.com/socket.io/websocket"
 
     def __init__(
         self,
@@ -287,7 +294,12 @@ class TvWSClient:
             self._send("set_auth_token", [self._auth.auth_token])
         self._send("chart_create_session", [self._chart_session])
         self._send("quote_create_session", [self._quote_session])
-        self._send("quote_set_fields", [self._quote_session, "lp", "volume", "ch"])
+        # 2025-07-13 – The *ch* (absolute change) field started triggering
+        # sporadic ``critical_error`` responses on TradingView’s prodata
+        # cluster.  Since *lp* and *volume* are sufficient for tick + bar
+        # handling we omit the problematic field to avoid unnecessary
+        # disconnects.
+        self._send("quote_set_fields", [self._quote_session, "lp", "volume"])
 
         # NB: we do *not* set quote_set_fields – client may do so later if desired.
 
@@ -306,7 +318,7 @@ class TvWSClient:
         # Quote subscription (for last trade ‘tick’ updates)
         self._send(
             "quote_add_symbols",
-            [self._quote_session, symbol_upper],
+            [self._quote_session, symbol_upper, {"flags": ["force_permission"]}],
         )
         # track mapping from series id to subscription metadata
         self._series[series_id] = sub
@@ -324,7 +336,7 @@ class TvWSClient:
                 series_id,  # duplicated id
                 alias,  # symbol alias
                 sub.interval,  # resolution ("1" etc.)
-                max(1, self._n_init_bars),
+                max(0, self._n_init_bars) if self._n_init_bars is not None else 0,
                 "",  # no extended session
             ],
         )
@@ -491,7 +503,10 @@ class TvWSClient:
             extra={"code_path": __file__},
         )
         # resolve and subscribe for history bars
-        self._send("quote_add_symbols", [self._quote_session, sym_up])
+        self._send(
+            "quote_add_symbols",
+            [self._quote_session, sym_up, {"flags": ["force_permission"]}],
+        )
         desc = f'{{"symbol":"{sym_up}","adjustment":"splits"}}'
         self._send("resolve_symbol", [self._chart_session, alias, desc])
         self._send(

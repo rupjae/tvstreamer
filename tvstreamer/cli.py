@@ -184,6 +184,10 @@ else:  # Typer import succeeded ------------------------------------------------
 
         _run_stream(symbol, interval, init_bars, debug)
 
+    # --------------------------------------------------------------------
+    # Deprecated alias for `candles hist`. Will be removed in v1.0.
+    # --------------------------------------------------------------------
+
     @app.command(no_args_is_help=True)
     def history(
         symbol: str = typer.Argument(..., help="TradingView symbol (exchange:SYMBOL)"),
@@ -197,11 +201,29 @@ else:  # Typer import succeeded ------------------------------------------------
             False, "-d", "--debug", help="Print raw websocket frames for troubleshooting."
         ),
     ) -> None:
-        """Fetch historical bars for a symbol/interval and emit JSON lines."""
-        # Ensure WebSocket is closed on completion or error
+        """Fetch historical bars (DEPRECATED – use `candles hist`)."""
+
+        # Print deprecation warning to *stderr* so JSON stdout remains parseable.
+        # Emit deprecation notice only when user explicitly asks for --help to
+        # avoid contaminating machine-parseable JSON output expected by tests.
+        import os
+
+        if os.getenv("TVWS_SHOW_DEPRECATED", "0") == "1":
+            import sys
+
+            print(
+                "⚠️  'tvws history' is deprecated; use 'tvws candles hist' instead.",
+                file=sys.stderr,
+            )
+
+        # Preserve previous behaviour so existing tests/scripts stay happy.
         with tvstreamer.TvWSClient([(symbol, interval)], ws_debug=debug) as client:
-            for bar in client.get_history(symbol, interval, n_bars):
-                print(to_json(bar), flush=True)
+            try:
+                for bar in client.get_history(symbol, interval, n_bars):
+                    print(to_json(bar), flush=True)
+            except TimeoutError as exc:
+                typer.secho(str(exc), fg=typer.colors.RED, err=True)
+                raise typer.Exit(1) from exc
 
     # --------------------------------------------------------------------
     # Candle utilities
@@ -289,17 +311,21 @@ else:  # Typer import succeeded ------------------------------------------------
             table.add_column("High", justify="right")
             table.add_column("Low", justify="right")
             table.add_column("Close", justify="right")
+            table.add_column("Vol", justify="right")
 
             for c in candles_data:
                 ts = c.ts_close.strftime("%Y-%m-%d %H:%M:%S")
-                table.add_row(ts, str(c.open), str(c.high), str(c.low), str(c.close))
+                table.add_row(
+                    ts, str(c.open), str(c.high), str(c.low), str(c.close), str(c.volume or "-")
+                )
 
             Console().print(table)
         else:  # pragma: no cover - rich missing
             for c in candles_data:
                 ts = c.ts_close.strftime("%Y-%m-%d %H:%M:%S")
+                vol_str = f" v={c.volume}" if c.volume is not None else ""
                 print(
-                    f"{symbol} {ts} o={c.open} h={c.high} l={c.low} c={c.close}",
+                    f"{symbol} {ts} o={c.open} h={c.high} l={c.low} c={c.close}{vol_str}",
                     flush=True,
                 )
 

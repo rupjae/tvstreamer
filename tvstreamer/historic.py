@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import random
+import re
 import string
 import time
 
@@ -19,6 +20,7 @@ websockets: Any = None
 from .decoder import decode_candle_frame
 from .models import Candle
 from .intervals import validate
+from .auth import discover_tv_cookies, AuthCookies
 
 __all__ = ["get_historic_candles", "TooManyRequestsError"]
 
@@ -30,7 +32,9 @@ class TooManyRequestsError(RuntimeError):
 # global semaphore controlling concurrent websocket sessions
 _websocket_semaphore = asyncio.Semaphore(3)
 
-_WS_ENDPOINT = "wss://data.tradingview.com/socket.io/websocket"
+# See comment in tvstreamer.wsclient.TvWSClient – switch to *prodata* cluster
+# which currently allows direct WebSocket upgrades without Cloudflare cookies.
+_WS_ENDPOINT = "wss://prodata.tradingview.com/socket.io/websocket"
 
 
 async def _ensure_websockets() -> None:
@@ -53,49 +57,146 @@ def _tv_msg(method: str, params: list) -> str:
 
 async def _fetch_history(symbol: str, interval: str, limit: int, timeout: float) -> list[Candle]:
     symbol_up = symbol.upper()
+    # ------------------------------------------------------------------
+    # Discover TradingView cookies (env → Safari macOS) so we can authenticate
+    # against the *prodata* cluster.  Anonymous requests still work for many
+    # symbols, but certain exchanges and low intervals require a valid
+    # session.  We silently fall back to anonymous mode when no cookies are
+    # available so CLI users without a browser login are not blocked.
+    # ------------------------------------------------------------------
+
+    cookies: AuthCookies = discover_tv_cookies()
     chart = "cs_" + "".join(random.choice(string.ascii_lowercase) for _ in range(12))
-    quote = "qs_" + "".join(random.choice(string.ascii_lowercase) for _ in range(12))
     candles: list[Candle] = []
     completed = False
+    seen_ts: set[int] = set()
     logger = logging.getLogger(__name__)
 
     try:
-        async with websockets.connect(_WS_ENDPOINT) as ws:
-            await ws.send(_tv_msg("set_auth_token", ["unauthorized_user_token"]))
+        # Some TradingView edge nodes reject WebSocket upgrades that do not
+        # carry an *Origin* header matching the host.  Pass the header using
+        # the modern ``origin=…`` parameter when available, falling back to
+        # *extra_headers* for older ``websockets`` versions (<10).
+
+        import inspect
+
+        origin_hdr = "https://prodata.tradingview.com"
+
+        # Assemble extra HTTP headers
+        extra_headers: dict[str, str] = {"Origin": origin_hdr}
+        if cookies.sessionid:
+            extra_headers["Cookie"] = f"sessionid={cookies.sessionid}"
+
+        if "origin" in inspect.signature(websockets.connect).parameters:
+            connect_ctx = websockets.connect(
+                _WS_ENDPOINT,
+                origin=origin_hdr,
+                extra_headers=extra_headers,
+            )
+        else:  # pragma: no cover – legacy websockets (<10)
+            connect_ctx = websockets.connect(_WS_ENDPOINT, extra_headers=extra_headers)
+
+        async with connect_ctx as ws:
+            # ------------------------------------------------------------------
+            # Minimal message sequence to request historic bars
+            # ------------------------------------------------------------------
+            auth_tok = cookies.auth_token or "unauthorized_user_token"
+            await ws.send(_tv_msg("set_auth_token", [auth_tok]))
+
+            # 1) Create a chart session (bar data lives here)
             await ws.send(_tv_msg("chart_create_session", [chart]))
-            await ws.send(_tv_msg("quote_create_session", [quote]))
-            await ws.send(_tv_msg("quote_set_fields", [quote, "lp", "volume", "ch"]))
-            await ws.send(_tv_msg("quote_add_symbols", [quote, symbol_up]))
+
+            # 2) Resolve the TradingView symbol to an internal descriptor. We use
+            #    a short alias so subsequent messages remain compact.
+            alias = "sds_sym_0"
+            descriptor = f'={{"symbol":"{symbol_up}","adjustment":"splits"}}'
+            await ws.send(_tv_msg("resolve_symbol", [chart, alias, descriptor]))
+
+            # 3) Request *limit* historical bars with create_series. The 6-th
+            #    parameter (history) instructs the server to send a snapshot of
+            #    the last *limit* completed candles.
             await ws.send(
                 _tv_msg(
-                    "quote_add_series",
-                    [quote, symbol_up, interval, {"countback": limit}],
+                    "create_series",
+                    [chart, "sds_1", "s0", alias, interval, limit, ""],
                 )
             )
 
             with anyio.move_on_after(timeout) as cancel:
+                # pre-compiled regex for footer splitting
+                _split_re = re.compile(r"~m~\d+~m~")
+
                 async for raw in ws:
-                    if "series_completed" in raw or "quote_completed" in raw:
-                        completed = True
-                        break
+                    # ------------------------------------------------------------------
+                    # Heartbeat handling – echo same payload back (~h~<id>)
+                    # ------------------------------------------------------------------
+                    if "~h~" in raw:
+                        for part in _split_re.split(raw):
+                            if part.startswith("~h~"):
+                                pong = f"~m~{len(part)}~m~{part}"
+                                await ws.send(pong)
+
+                    # ------------------------------------------------------------------
+                    # Try fast-path regex decoder for incremental 'du' updates
+                    # ------------------------------------------------------------------
                     frame = decode_candle_frame(raw)
-                    if not frame or "bar_close_time" not in frame:
-                        continue
-                    payload = {
-                        "symbol": symbol_up,
-                        "v": [
-                            frame["ts"],
-                            frame["o"],
-                            frame["h"],
-                            frame["l"],
-                            frame["c"],
-                            frame["v"],
-                        ],
-                        "lbs": {"bar_close_time": frame["bar_close_time"]},
-                    }
-                    candles.append(Candle.from_frame(payload, interval=interval))
-                    if len(candles) >= limit:
-                        completed = True
+                    if frame and "bar_close_time" in frame:
+                        ts_int = int(frame["ts"])
+                        if ts_int not in seen_ts:
+                            seen_ts.add(ts_int)
+                            payload = {
+                                "symbol": symbol_up,
+                                "n": symbol_up,
+                                "v": [
+                                    frame["ts"],
+                                    frame["o"],
+                                    frame["h"],
+                                    frame["l"],
+                                    frame["c"],
+                                    frame["v"],
+                                ],
+                                "lbs": {"bar_close_time": frame["bar_close_time"]},
+                            }
+                            candles.append(Candle.from_frame(payload, interval=interval))
+
+                    # ------------------------------------------------------------------
+                    # Scan JSON chunks for series_loading / timescale_update snapshots
+                    # ------------------------------------------------------------------
+                    for part in _split_re.split(raw):
+                        if not part or part.startswith("~h~"):
+                            continue
+                        try:
+                            msg = json.loads(part)
+                        except json.JSONDecodeError:
+                            continue
+
+                        mtype = msg.get("m")
+                        if mtype not in ("series_loading", "timescale_update"):
+                            continue
+
+                        try:
+                            series_obj = msg["p"][1]["sds_1"]
+                            frames = series_obj.get("s", [])
+                        except (IndexError, KeyError, TypeError):  # pragma: no cover
+                            continue
+
+                        for f in frames:
+                            v_arr = f.get("v")
+                            if not v_arr:
+                                continue
+                            ts_int = int(v_arr[0])
+                            if ts_int in seen_ts:
+                                continue
+                            seen_ts.add(ts_int)
+                            # Ensure symbol present for from_frame()
+                            f.setdefault("n", symbol_up)
+                            candles.append(Candle.from_frame(f, interval=interval))
+
+                        if len(candles) >= limit:
+                            completed = True
+                            break
+
+                    if completed:
                         break
             if cancel.cancel_called:
                 logger.warning(
