@@ -21,6 +21,7 @@ from .decoder import decode_candle_frame
 from .models import Candle
 from .intervals import validate
 from .auth import discover_tv_cookies, AuthCookies
+from .connection import TradingViewConnection
 
 __all__ = ["get_historic_candles", "TooManyRequestsError"]
 
@@ -52,7 +53,7 @@ async def _ensure_websockets() -> None:
 
 def _tv_msg(method: str, params: list) -> str:
     payload = json.dumps({"m": method, "p": params}, separators=(",", ":"))
-    return f"~m~{len(payload)}~m~" + payload
+    return TradingViewConnection._prepend_header(payload)
 
 
 async def _fetch_history(symbol: str, interval: str, limit: int, timeout: float) -> list[Candle]:

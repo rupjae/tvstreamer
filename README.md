@@ -47,6 +47,10 @@ with TvWSClient(subs, n_init_bars=500) as client:
             handle_bar(event)
 ```
 
+> **Note**: TradingView changed the `quote_add_symbols` message format in
+> June 2025. Since tvstreamer 0.9.3 the library sends the correct two-parameter
+> form to maintain compatibility.
+
 #### Authenticated mode (optional)
 
 ```python
@@ -286,6 +290,8 @@ Development
 * Clone your fork and install **dev** extras (`pip install -e .[dev]`).
 * Run the test-suite: `pytest -q`.
 * Apply the pre-commit hooks before pushing: `pre-commit run -a`.
+* Optionally run `scripts/smoke_quote_stream.py` to verify live streaming (requires
+  network access and TradingView availability).
 
 The GitHub Actions workflow caches dependencies, tests on Python 3.9–3.11,
 enforces `mypy --strict`, runs `pip-audit`, and uploads coverage to
