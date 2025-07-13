@@ -87,6 +87,16 @@ $ tvws -s BINANCE:BTCUSDT -s NYSE:MSFT -i 1D \
       | jq '.'   # pretty-print the JSON stream
 ```
 
+### Candle commands
+
+```bash
+# Live candles:
+tvws candles live -s BINANCE:BTCUSDT -i 5m
+
+# Historic candles:
+tvws candles hist BINANCE:BTCUSDT 1h --limit 50
+```
+
 > **Heads-up** ─ TradingView has no public, officially supported streaming API.
 > This project reverse-engineers the WebSocket contract observed in the web
 > application. End-points or message formats may break at any time without

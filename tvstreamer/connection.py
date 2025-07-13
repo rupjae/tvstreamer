@@ -72,10 +72,15 @@ class TradingViewConnection:
             await self._send("set_auth_token", [self._token])
             await self._send("chart_create_session", [self._chart_session, ""])
             await self._send("quote_create_session", [self._quote_session])
-            await self._send(
-                "quote_set_fields",
-                [self._quote_session, "lp", "volume", "ch"],
-            )
+            # July 2025 – TradingView’s *prodata* cluster started to reject
+            # the legacy ``ch`` (absolute change) field with a
+            # ``critical_error`` that subsequently leads to the server
+            # closing the WebSocket.  The field is not required for candle
+            # streaming, therefore we simply drop it from the handshake to
+            # improve connection stability while keeping the public API
+            # unchanged.  Down-stream code that still needs *change* values
+            # can subscribe via the quote session explicitly.
+            await self._send("quote_set_fields", [self._quote_session, "lp", "volume"])
             self._started = True
 
     async def subscribe_ticks(self, symbol: str) -> None:
@@ -83,7 +88,10 @@ class TradingViewConnection:
         sym = symbol.upper()
         self._tick_subs.add(sym)
         if sym not in self._quote_symbols:
-            await self._send("quote_add_symbols", [self._quote_session, sym])
+            await self._send(
+                "quote_add_symbols",
+                [self._quote_session, sym, {"flags": ["force_permission"]}],
+            )
             self._quote_symbols.add(sym)
         logging.getLogger(__name__).log(
             TRACE_LEVEL,
@@ -105,15 +113,23 @@ class TradingViewConnection:
         series_id = f"s{secrets.randbelow(9000) + 1000}"
         alias = f"{sym}_{series_id}"
         if sym not in self._quote_symbols:
-            await self._send("quote_add_symbols", [self._quote_session, sym])
+            await self._send(
+                "quote_add_symbols",
+                [self._quote_session, sym, {"flags": ["force_permission"]}],
+            )
             self._quote_symbols.add(sym)
         await self._send(
             "resolve_symbol",
             [self._chart_session, alias, {"symbol": sym, "adjustment": "splits"}],
         )
+        # July 2025 observations: prodata returns `critical_error` for
+        # history=0 **and** history=1.  The smallest value consistently
+        # accepted is 300 – TradingView’s original minimum.  That value means
+        # we get five hours of 1-minute data at most, which is still a small
+        # payload and resolves the attach failure.
         await self._send(
             "create_series",
-            [self._chart_session, series_id, series_id, alias, res, 1, ""],
+            [self._chart_session, series_id, series_id, alias, res, 300, ""],
         )
         self._candle_subs.add((sym, res))
         self._series_ids[(sym, res)].append(series_id)

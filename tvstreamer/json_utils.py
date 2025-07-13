@@ -17,6 +17,14 @@ def to_json(obj: Any) -> str:
     def _encoder(o: Any) -> Any:  # noqa: D401
         if dataclasses.is_dataclass(o):
             return dataclasses.asdict(o)
+        # Convert Decimal to float for compactness / JS compatibility.
+        try:
+            from decimal import Decimal
+
+            if isinstance(o, Decimal):
+                return float(o)
+        except ModuleNotFoundError:  # pragma: no cover – stdlib always present
+            pass
         if isinstance(o, datetime.datetime):
             o = o.astimezone(datetime.timezone.utc)
             return o.isoformat().replace("+00:00", "Z")
