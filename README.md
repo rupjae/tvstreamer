@@ -290,6 +290,8 @@ Development
 * Clone your fork and install **dev** extras (`pip install -e .[dev]`).
 * Run the test-suite: `pytest -q`.
 * Apply the pre-commit hooks before pushing: `pre-commit run -a`.
+* Optionally run `scripts/smoke_quote_stream.py` to verify live streaming (requires
+  network access and TradingView availability).
 
 The GitHub Actions workflow caches dependencies, tests on Python 3.9–3.11,
 enforces `mypy --strict`, runs `pip-audit`, and uploads coverage to

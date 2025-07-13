@@ -13,6 +13,8 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 ### Fixed
 - `quote_add_symbols` now uses the two-parameter form after TradingView's June
   2025 protocol update, restoring live candle streams.
+### Changed
+- Version jump from `0.3.x` aligns numbering with the TradingView protocol epoch.
 
 ## [0.3.3] - 2025-07-09
 ### Fixed

@@ -63,6 +63,7 @@ __all__ = [
     "MissingDependencyError",
     "configure_logging",
     "trace",
+    "messages",
 ]
 
 # --------------------------------------------------------------------
