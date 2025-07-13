@@ -290,7 +290,7 @@ def main():
     # Request extended‑hours (pre‑ & post‑market) candles by adding "session":"extended"
     sym = json.dumps(
         {
-            "symbol": "NASDAQ:NVDA",
+            "symbol": "BINANCE:BTCUSDT",
             "adjustment": "splits",
             "session": "extended",  # <‑‑ key part
         }
