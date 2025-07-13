@@ -90,7 +90,7 @@ class TradingViewConnection:
         if sym not in self._quote_symbols:
             await self._send(
                 "quote_add_symbols",
-                [self._quote_session, [sym], {"flags": ["force_permission"]}],
+                [self._quote_session, [sym]],
             )
             self._quote_symbols.add(sym)
         logging.getLogger(__name__).log(
@@ -115,7 +115,7 @@ class TradingViewConnection:
         if sym not in self._quote_symbols:
             await self._send(
                 "quote_add_symbols",
-                [self._quote_session, [sym], {"flags": ["force_permission"]}],
+                [self._quote_session, [sym]],
             )
             self._quote_symbols.add(sym)
         await self._send(

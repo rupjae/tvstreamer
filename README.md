@@ -47,6 +47,10 @@ with TvWSClient(subs, n_init_bars=500) as client:
             handle_bar(event)
 ```
 
+> **Note**: TradingView changed the `quote_add_symbols` message format in
+> June 2025. Since tvstreamer 0.9.3 the library sends the correct two-parameter
+> form to maintain compatibility.
+
 #### Authenticated mode (optional)
 
 ```python

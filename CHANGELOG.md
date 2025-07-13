@@ -9,6 +9,11 @@ The project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html
 ### Added
 - Safari cookie-based auth support for `TvWSClient`.
 
+## [0.9.3] - 2025-07-13
+### Fixed
+- `quote_add_symbols` now uses the two-parameter form after TradingView's June
+  2025 protocol update, restoring live candle streams.
+
 ## [0.3.3] - 2025-07-09
 ### Fixed
 - TradingView handshake and framing corrected for candle streams.
