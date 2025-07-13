@@ -318,7 +318,7 @@ class TvWSClient:
         # Quote subscription (for last trade ‘tick’ updates)
         self._send(
             "quote_add_symbols",
-            [self._quote_session, symbol_upper, {"flags": ["force_permission"]}],
+            [self._quote_session, [symbol_upper], {"flags": ["force_permission"]}],
         )
         # track mapping from series id to subscription metadata
         self._series[series_id] = sub
@@ -505,7 +505,7 @@ class TvWSClient:
         # resolve and subscribe for history bars
         self._send(
             "quote_add_symbols",
-            [self._quote_session, sym_up, {"flags": ["force_permission"]}],
+            [self._quote_session, [sym_up], {"flags": ["force_permission"]}],
         )
         desc = f'{{"symbol":"{sym_up}","adjustment":"splits"}}'
         self._send("resolve_symbol", [self._chart_session, alias, desc])
